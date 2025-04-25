@@ -43,10 +43,11 @@ export default class Game {
     async _loadWorldObjects() {
         const objects = await this._fetchWorldObjects();
 
-        objects.forEach(objectData => {
+        objects.forEach(async objectData => {
             const classConstructor = Game.WORLD_OBJECTS_CLASSMAP[objectData.type];
             if (!classConstructor) throw new Error(`No class found for WorldObject type: ${objectData.type}`);
             const object = new classConstructor(objectData.properties);
+            await object.initialise();
             this._scene.add(object._mesh);        
         });
     }
@@ -56,7 +57,7 @@ export default class Game {
             {
                 "type": "enemy",
                 "properties": {
-                    "position": { "x": 0, "y": 0, "z": 0 },
+                    "position": { "x": 0, "y": -3, "z": -1 },
                     "rotation": { "x": 0, "y": 0, "z": 0 },
                     "updateCallback": function() {
                         this._mesh.rotation.y += 0.01;
@@ -78,7 +79,7 @@ export default class Game {
 
         this._scene.add(spotlight);
         this._scene.add(spotlight.target);
-        this._scene.add(spotlightHelper);
+        //this._scene.add(spotlightHelper);
     }
 
     _setupCamera() {
@@ -124,7 +125,7 @@ export default class Game {
             }
 
             if (object instanceof THREE.SpotLight) {
-                object.position.y += Math.sin(Date.now() * 0.001) * 0.05;
+                object.position.y += Math.sin(Date.now() * 0.0005) * 0.025;
             }
 
             if (object instanceof THREE.SpotLightHelper) {
