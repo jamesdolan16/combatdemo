@@ -19,6 +19,7 @@ export default class Game {
     constructor(container) {
         if (!(container instanceof HTMLElement)) throw new Error("Container is not a valid DOM element");
         this._container = container;
+        this._mixers = [];
     }
 
     async initialise() {
@@ -28,6 +29,7 @@ export default class Game {
         this._setupLights();
         this._setupCamera();
         this._setupPlayer();
+        this._loadWorldObjects();
         this._setupControls();
         this._setupRenderer();
         this._setupCannonDebugger();
@@ -66,21 +68,29 @@ export default class Game {
         });
         this._terrainBody = floorBody;
         this._world.addBody(floorBody);
-
-        this._loadWorldObjects();
     }
 
     async _loadWorldObjects() {
-        this._mixers = [];
         const objects = await this._fetchWorldObjects();
 
-        objects.forEach(async objectData => {
+        objects.forEach(async (objectData) => {
             const classConstructor = Game.WORLD_OBJECTS_CLASSMAP[objectData.type];
             if (!classConstructor) throw new Error(`No class found for WorldObject type: ${objectData.type}`);
-            const object = new classConstructor(this._loader, objectData.properties);
+            const object = new classConstructor(this, objectData.properties);
             await object.initialise();
             this._mixers.push(object._mixer);
-            this._scene.add(object._mesh);        
+            this._scene.add(object._mesh); 
+            this._scene.add(
+                new THREE.ArrowHelper(
+                    new THREE.Vector3(0, 0, -1),
+                    object._mesh.position,
+                    2,
+                    0xff0000
+                ), 
+            )       
+            this._world.addBody(object._body._capsuleBody);
+            
+            this._world.addContactMaterial(object._contactMaterial);
         });
     }
 
@@ -89,12 +99,14 @@ export default class Game {
             {
                 "type": "enemy",
                 "properties": {
-                    "position": { "x": 0, "y": 1, "z": 0 },
-                    "rotation": { "x": 0, "y": 0, "z": 0 },
+                    "position": { "x": 0, "y": 5, "z": 0 },
+                    //"rotation": { "x": 0, "y": 0, "z": 0 },
+                    "gravity": true,
                     "startupCallback": function() {
                         this._mixer.clipAction(this._animations[3]).play();
                     },
                     "updateCallback": function() {
+                        this.pursue(this._game._camera);
                     }
                 }
             }
@@ -240,7 +252,7 @@ export default class Game {
 
         this._mixers.forEach(mixer => mixer.update(delta));
 
-        this._controls.update(1/60);
+        this._controls.update(delta);
         this._updatePlayer();   
         this._scene.traverse(object => {
             if (object.userData.parent instanceof WorldObject) {
@@ -251,7 +263,7 @@ export default class Game {
                 object.update();
             }
         });
-        this._world.step(1 / 60);
+        this._world.step(delta);
         this._playerMesh.position.copy(this.cannonToThreeVec3(this._playerBody._capsuleBody.position));
         this._playerMesh.quaternion.copy(this.cannonToThreeQuaternion(this._playerBody._capsuleBody.quaternion));
         //this._cannonDebugger.update();
@@ -274,4 +286,9 @@ export default class Game {
         return new THREE.Quaternion(quat.x, quat.y, quat.z, quat.w);
     }
 
+    lerpAngle(a, b, t) {
+        const delta = ((((b - a) % (Math.PI * 2)) + (3 * Math.PI)) % (Math.PI * 2)) - Math.PI;
+        return a + delta * t;
+    }
+    
 }
