@@ -239,7 +239,7 @@ export default class Game {
     }
 
     _setupCannonDebugger() {
-        this._cannonDebugger = new CannonDebugger(this._scene, this._world);
+        //this._cannonDebugger = new CannonDebugger(this._scene, this._world);
     }
 
     start() {
@@ -267,7 +267,7 @@ export default class Game {
             this._world.step(delta);
             this._playerMesh.position.copy(this.cannonToThreeVec3(this._playerBody._capsuleBody.position));
             this._playerMesh.quaternion.copy(this.cannonToThreeQuaternion(this._playerBody._capsuleBody.quaternion));
-            this._cannonDebugger.update();
+            //this._cannonDebugger.update();
             this._renderer.render(this._scene, this._camera);
         }
     }
