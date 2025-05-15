@@ -1,9 +1,15 @@
 import * as THREE from 'three';
-import WorldObject from './worldObject.js';
 import * as CANNON from 'cannon-es';
+import WorldObject from './worldObject.js';
 import Capsule from '../cannon/capsule.js';
 
 export default class EnemyObject extends WorldObject {
+
+    constructor(game, {position, rotation, gravity, startupCallback, updateCallback} = {}) {
+        super(game, {position, rotation, gravity, startupCallback, updateCallback});
+        this._movementSpeed = 4;
+    }
+
     async _generateMesh() {
         let gltf = await this._loader.loadAsync('/male.glb', (e) => {
             console.log((e.loaded / e.total * 100) + '% loaded');
@@ -61,11 +67,12 @@ export default class EnemyObject extends WorldObject {
     }
 
     /**
-     * Face the target and move towards it
+     * Face the target and move towards it at the speed specified.
+     * If no speed is specified, the enemies default movementSpeed is used.
      * 
      * @param {Object3D} target 
      */
-    pursue(target) {
+    pursue(target, speed = null) {
         // Get physics-based position as THREE.Vector3
         const enemyPos = this._game.cannonToThreeVec3(this._body._capsuleBody.position);
         
@@ -84,7 +91,7 @@ export default class EnemyObject extends WorldObject {
         const moveDir = new THREE.Vector3(Math.sin(angle), 0, Math.cos(angle));
         moveDir.normalize();
     
-        const speed = 4;
+        speed = speed || this._movementSpeed;
         this._body._capsuleBody.velocity.x = moveDir.x * speed;
         this._body._capsuleBody.velocity.z = moveDir.z * speed;
     
