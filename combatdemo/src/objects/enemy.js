@@ -12,8 +12,10 @@ export default class EnemyObject extends WorldObject {
         this._mesh = new THREE.Object3D();  // Wrapper to ensure correct rotation
         this._mesh.castShadow = true;
         this._mesh.userData.parent = this;
+        this._mesh.userData.box = new THREE.Box3().setFromObject(gltf.scene);
+        this._mesh.userData.height = this._mesh.userData.box.max.y - this._mesh.userData.box.min.y;
 
-        //gltf.scene.rotation.y = Math.PI;
+        this._mesh.scale.setScalar(1.8 / this._mesh.userData.height);
 
         this._mesh.position.set(
             this._initialPosition.x, 
@@ -26,12 +28,11 @@ export default class EnemyObject extends WorldObject {
             this._initialRotation.z
         );
 
+        gltf.scene.position.y = -this._mesh.userData.height / 2;
         this._mesh.add(gltf.scene);
 
         this._animations = gltf.animations;
         this._mixer = new THREE.AnimationMixer(this._mesh);
-
-        this._mesh.scale.set(1, 1, 1);
     }
 
     _setupPhysics() {
@@ -59,7 +60,7 @@ export default class EnemyObject extends WorldObject {
         }
     }
 
-        /**
+    /**
      * Face the target and move towards it
      * 
      * @param {Object3D} target 
@@ -83,7 +84,7 @@ export default class EnemyObject extends WorldObject {
         const moveDir = new THREE.Vector3(Math.sin(angle), 0, Math.cos(angle));
         moveDir.normalize();
     
-        const speed = 5;
+        const speed = 4;
         this._body._capsuleBody.velocity.x = moveDir.x * speed;
         this._body._capsuleBody.velocity.z = moveDir.z * speed;
     
