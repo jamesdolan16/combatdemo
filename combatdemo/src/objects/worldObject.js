@@ -1,18 +1,23 @@
-import { GLTFLoader } from "three/examples/jsm/Addons";
-import * as CANNON from 'cannon-es';
-import * as THREE from "three";
-
-
 export default class WorldObject {
-    constructor(game, {position, rotation, gravity, startupCallback, updateCallback} = {}) {
+    constructor(game, options = {}) {
         this._game = game;
         this._loader = game._loader;
-        this._initialPosition = position || { x: 0, y: 0, z: 0};
-        this._initialRotation = rotation || { x: 0, y: 0, z: 0};
-        this._gravity = gravity || false;
         this._terrainPhysicsMaterial = game._terrainBody.material;
-        this._startupCallback = startupCallback || (() => {});
-        this._updateCallback = updateCallback || (() => {});
+
+        const { 
+            position = { x: 0, y: 0, z: 0 }, 
+            rotation = { x: 0, y: 0, z: 0 }, 
+            gravity = false, 
+            startupCallback = () => {}, 
+            updateCallback = () => {} 
+        } = options;
+
+        //this.id = "";
+        this._initialPosition = position;
+        this._initialRotation = rotation;
+        this._gravity = gravity;
+        this._startupCallback = startupCallback;
+        this._updateCallback = updateCallback;
     }
 
     async initialise() {
@@ -31,7 +36,7 @@ export default class WorldObject {
      */
     _setupPhysics() {}
 
-    update() {
-        this._updateCallback();
+    update(delta) {
+        this._updateCallback(delta);
     }
 }

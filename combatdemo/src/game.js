@@ -1,15 +1,17 @@
 import * as THREE from 'three';
-import { GLTFLoader, PointerLockControls, FirstPersonControls } from 'three/examples/jsm/Addons.js';
+import { GLTFLoader, PointerLockControls } from 'three/examples/jsm/Addons.js';
 import * as CANNON from 'cannon-es';
 import CannonDebugger from 'cannon-es-debugger';
 import EnemyObject from './objects/enemy';
 import WorldObject from './objects/worldObject';
 import Capsule from './cannon/capsule';
 import { debug } from 'three/src/nodes/TSL.js';
+import PlayerObject from './objects/player';
 
 export default class Game {
     static CAMERA_POSITION = new THREE.Vector3(0, 15, 5);
     static WORLD_OBJECTS_CLASSMAP = {
+        "player": PlayerObject,
         "enemy": EnemyObject
     };
 
@@ -27,10 +29,7 @@ export default class Game {
         this._loader = new GLTFLoader();
         await this._setupScene();
         this._setupLights();
-        this._setupCamera();
-        this._setupPlayer();
-        this._loadWorldObjects();
-        this._setupControls();
+        await this._loadWorldObjects();
         this._setupRenderer();
         this._setupCannonDebugger();
     }
@@ -64,7 +63,8 @@ export default class Game {
         );
         const floorBody = new CANNON.Body({
             mass: 0,
-            shape: floorShape
+            shape: floorShape,
+            material: new CANNON.Material('terrain')
         });
         this._terrainBody = floorBody;
         this._world.addBody(floorBody);
@@ -80,22 +80,29 @@ export default class Game {
             await object.initialise();
             this._mixers.push(object._mixer);
             this._scene.add(object._mesh); 
-            this._scene.add(
+            /*this._scene.add(
                 new THREE.ArrowHelper(
                     new THREE.Vector3(0, 0, -1),
                     object._mesh.position,
                     2,
                     0xff0000
                 ), 
-            )       
+            )*/      
             this._world.addBody(object._body._capsuleBody);
-            
             this._world.addContactMaterial(object._contactMaterial);
         });
     }
 
     async _fetchWorldObjects() {
         const objects = [
+            {
+                "type": "player",
+                "properties": {
+                    "position": { "x": 0, "y": 15, "z": 5 },
+                },
+                "gravity": true,
+                "startupCallback": function() {}
+            },
             {
                 "type": "enemy",
                 "properties": {
@@ -106,7 +113,7 @@ export default class Game {
                         this._mixer.clipAction(this._animations[3]).play();
                     },
                     "updateCallback": function() {
-                        this.pursue(this._game._camera);
+                        this.pursue(this._game.activePlayer._camera);
                     }
                 }
             }
@@ -117,64 +124,6 @@ export default class Game {
     
     _setupLights() {
         this._scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-    }
-
-    _setupCamera() {
-        this._camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        this._camera.position.copy(Game.CAMERA_POSITION);   // Ensure the camera is looking at the scene
-    }
-
-    _setupPlayer() {
-        const playerGeometry = new THREE.SphereGeometry(0, 32, 32);
-        const playerMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
-        this._playerMesh = new THREE.Mesh(playerGeometry, playerMaterial);
-        this._scene.add(this._playerMesh);
-
-        // Player physics body
-        this._playerBody = new Capsule(0.5, 1.8, 1, { x: 0, y: 3, z: 3 });
-        this._world.addBody(this._playerBody._capsuleBody);
-
-        // In your _setupPlayer() or physics setup
-        const playerPhysicsMaterial = new CANNON.Material('playerMaterial');
-        const terrainPhysicsMaterial = new CANNON.Material('terrainMaterial');
-
-        // Create a contact material with reduced friction
-        const contactMaterial = new CANNON.ContactMaterial(playerPhysicsMaterial, terrainPhysicsMaterial, {
-            friction: 0.1, // Lower friction for smoother movement on slopes
-            restitution: 0.0, // No bounce
-        });
-
-        // Add the contact material to the world
-        this._world.addContactMaterial(contactMaterial);
-
-        // Assign the materials to the player and terrain
-        this._playerBody._capsuleBody.material = playerPhysicsMaterial;
-        this._terrainBody.material = terrainPhysicsMaterial; // Ensure your terrain body has this material
-    }
-
-    _setupControls() {
-        this._controls = new PointerLockControls(this._camera, this._container);
-        this._controls.lookSpeed = 0.005;
-        this._controls.lookVertical = true;
-
-        document.addEventListener('click', () => {
-            this._controls.lock();
-        });
-          
-        document.addEventListener('keypress', (event) => {
-            if (event.code === 'KeyEscape') {
-                this._controls.unlock();
-            }
-        });
-
-        this._playerVelocity = new CANNON.Vec3();
-        this._playerDirection = new THREE.Vector3();
-        this._playerDirection.set(0, 0, 0);
-
-        this._keysPressed = {};
-
-        document.addEventListener('keydown', (e) => this._keysPressed[e.code] = true);
-        document.addEventListener('keyup', (e) => this._keysPressed[e.code] = false);
     }
 
     _playerGrounded() {
@@ -192,43 +141,6 @@ export default class Game {
         return intersects.length > 0; // If there's an intersection, we're grounded
     }
 
-    _updatePlayer() {
-        const input = new THREE.Vector3();
-
-        if (this._keysPressed['KeyW']) input.z -= 1;
-        if (this._keysPressed['KeyS']) input.z += 1;
-        if (this._keysPressed['KeyA']) input.x -= 1;
-        if (this._keysPressed['KeyD']) input.x += 1;
-        //if (this._keysPressed['Space'] && this._playerGrounded()) input.y = 5;
-
-        if (input.lengthSq() > 0) {
-            // Get horizontal facing direction from camera
-            const euler = new THREE.Euler().setFromQuaternion(this._controls.object.quaternion, 'YXZ');
-            euler.x = 0;
-            euler.z = 0;
-            input.applyEuler(euler);
-            input.normalize();
-            input.multiplyScalar(1.5);
-
-            // Apply movement
-            const speed = 5;
-            this._playerBody._capsuleBody.velocity.x = input.x * speed;
-            this._playerBody._capsuleBody.velocity.z = input.z * speed;
-        } else {
-            this._playerBody._capsuleBody.velocity.x *= 0.8;
-            this._playerBody._capsuleBody.velocity.z *= 0.8;
-        }
-
-        if (this._keysPressed['Space'] && this._playerGrounded()) {
-            this._playerBody._capsuleBody.velocity.y = 5; // Apply upward velocity
-        }
-
-        this._controls.object.position.set(
-            this._playerBody._capsuleBody.position.x,
-            this._playerBody._capsuleBody.position.y + 0.8,
-            this._playerBody._capsuleBody.position.z
-        );
-    }
 
     _setupRenderer() {
         this._renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -250,14 +162,10 @@ export default class Game {
         requestAnimationFrame(() => this._animate());
         const delta = this._clock.getDelta();
 
-        if (this._controls.isLocked) {
-            this._mixers.forEach(mixer => mixer.update(delta));
-
-            this._controls.update(delta);
-            this._updatePlayer();   
+        if (this.activePlayer._controls.isLocked) {
             this._scene.traverse(object => {
                 if (object.userData.parent instanceof WorldObject) {
-                    object.userData.parent.update();
+                    object.userData.parent.update(delta);
                 }
 
                 if (object instanceof THREE.SpotLightHelper) {
@@ -265,10 +173,8 @@ export default class Game {
                 }
             });
             this._world.step(delta);
-            this._playerMesh.position.copy(this.cannonToThreeVec3(this._playerBody._capsuleBody.position));
-            this._playerMesh.quaternion.copy(this.cannonToThreeQuaternion(this._playerBody._capsuleBody.quaternion));
             //this._cannonDebugger.update();
-            this._renderer.render(this._scene, this._camera);
+            this._renderer.render(this._scene, this.activePlayer._camera);
         }
     }
 
