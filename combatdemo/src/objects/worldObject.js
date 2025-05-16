@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+
 export default class WorldObject {
     constructor(game, options = {}) {
         this._game = game;
@@ -38,5 +40,21 @@ export default class WorldObject {
 
     update(delta) {
         this._updateCallback(delta);
+    }
+
+    alignToSocket(itemMesh, itemSocket, targetSocket) {
+        const itemSocketWorldPos = itemSocket.getWorldPosition(new THREE.Vector3());
+        const itemSocketWorldQuat = itemSocket.getWorldQuaternion(new THREE.Quaternion());
+
+        // Step 2: Convert that world position to local space of itemMesh
+        const offsetPos = itemMesh.worldToLocal(itemSocketWorldPos.clone());
+        const offsetQuat = itemSocketWorldQuat.clone().invert(); // rotation we need to "cancel"
+
+        // Step 3: Attach item to the target socket
+        targetSocket.add(itemMesh);
+
+        // Step 4: Apply inverse offset so that the item’s internal socket aligns to target
+        itemMesh.position.copy(offsetPos.negate());
+        itemMesh.quaternion.copy(offsetQuat);
     }
 }

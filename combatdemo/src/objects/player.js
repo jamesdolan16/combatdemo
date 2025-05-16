@@ -17,8 +17,8 @@ export default class PlayerObject extends HumanObject {
 
     _setupCamera() {
         this._camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const worldPosition = this._cameraSocket.getWorldPosition(new THREE.Vector3());
-        this._camera.position.copy(worldPosition);
+        const socketPos = this._cameraSocket.getWorldPosition(new THREE.Vector3());
+        this._camera.position.copy(socketPos);
         this._camera.rotation.copy(this._cameraSocket.rotation);
         this._camera.userData.parent = this;
     }
@@ -56,10 +56,7 @@ export default class PlayerObject extends HumanObject {
         super.update(delta);
 
         const socketPos = this._cameraSocket.getWorldPosition(new THREE.Vector3());
-        const socketQuat = this._cameraSocket.getWorldQuaternion(new THREE.Quaternion());
-
         this._camera.position.copy(socketPos);
-        //this._camera.quaternion.copy(socketQuat);
         
         this._controls.update(delta);
 
@@ -68,7 +65,7 @@ export default class PlayerObject extends HumanObject {
         if (this._keysPressed['KeyS']) input.z += 1;
         if (this._keysPressed['KeyA']) input.x -= 1;
         if (this._keysPressed['KeyD']) input.x += 1;
-        if (this._keysPressed['Space'] && this._playerGrounded()) this.jump();
+        if (this._keysPressed['Space'] && this.grounded()) this.jump();
 
         if (input.lengthSq() > 0) {
             // Get horizontal facing direction from camera
@@ -104,19 +101,5 @@ export default class PlayerObject extends HumanObject {
 
     jump() {
         this._body._capsuleBody.velocity.y = 5;
-    }
-
-    grounded() {
-        const rayOrigin = new THREE.Vector3(
-            this._playerBody._capsuleBody.position.x, 
-            this._playerBody._capsuleBody.position.y + 0.5, 
-            this._playerBody._capsuleBody.position.z
-        ); // Slight offset upwards to start above the player
-        const rayDirection = new THREE.Vector3(0, -1, 0);  // Ray going downward
-        
-        const raycaster = new THREE.Raycaster(rayOrigin, rayDirection, 0, 2.3); // Range is from 0 to 1 to detect objects just beneath
-        const intersects = raycaster.intersectObject(this._terrain);  // _terrain is the terrain object or mesh
-        
-        return intersects.length > 0;
     }
 }

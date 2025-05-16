@@ -109,12 +109,19 @@ export default class Game {
                     "position": { "x": 0, "y": 5, "z": 0 },
                     //"rotation": { "x": 0, "y": 0, "z": 0 },
                     "gravity": true,
-                    "startupCallback": function() {
-                        this._mixer.clipAction(this._animations[3]).play();
-                    },
+                    "startupCallback": function() {},
                     "updateCallback": function() {
-                        this.pursue(this._game.activePlayer._camera);
-                    }
+                        if (this.canSee(this._game.activePlayer)) {
+                            this.pursue(this._game.activePlayer);
+                        }
+                    },
+                    "inventory": [
+                        {
+                            "type": "weapon1h",
+                            "item": "falx1h",
+                            "equippedR": true
+                        }
+                    ]
                 }
             }
         ];
@@ -162,7 +169,7 @@ export default class Game {
         requestAnimationFrame(() => this._animate());
         const delta = this._clock.getDelta();
 
-        if (this.activePlayer._controls.isLocked) {
+        if (this.activePlayer._controls?.isLocked) {
             this._scene.traverse(object => {
                 if (object.userData.parent instanceof WorldObject) {
                     object.userData.parent.update(delta);
