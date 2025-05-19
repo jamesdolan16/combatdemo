@@ -1,0 +1,1 @@
+export const WALKSPEED = 2.5;
