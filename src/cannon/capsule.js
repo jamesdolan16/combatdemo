@@ -1,7 +1,7 @@
 import * as CANNON from 'cannon-es';
 
 export default class Capsule {
-    constructor(radius = 0.5, height = 1.8, mass = 1, position = { x: 0, y: 0, z: 0 }) {
+    constructor(radius = 0.5, height = 1.8, mass = 0.05, position = { x: 0, y: 0, z: 0 }) {
         this._radius = radius;
         this._height = height;
         this._mass = mass;

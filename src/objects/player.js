@@ -97,9 +97,4 @@ export default class PlayerObject extends HumanObject {
         const angle = Math.atan2(cameraDirection.x, cameraDirection.z);
         this._mesh.quaternion.setFromEuler(new THREE.Euler(0, angle, 0));
     }
-    
-
-    jump() {
-        this._body._capsuleBody.velocity.y = 5;
-    }
 }

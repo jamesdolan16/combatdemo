@@ -12,12 +12,14 @@ export default class HumanObject extends WorldObject {
 
         const {
             movementSpeed = U.WALKSPEED,
-            maxViewDistance = 20,
+            jumpVelocity = U.JUMPVELOCITY,
+            viewDistance = U.VIEWDISTANCE,
             inventory = [],
         } = options;
         
         this._movementSpeed = movementSpeed;
-        this._maxViewDistance = maxViewDistance;;
+        this._jumpVelocity = jumpVelocity;
+        this._viewDistance = viewDistance;
         this.inventory = inventory;
         this.slots = {
             rightHand: null,
@@ -93,6 +95,10 @@ export default class HumanObject extends WorldObject {
             }
         });
 
+        gltf.scene.traverse((child) => {
+            child.userData.worldObject = this;
+        });
+
         this._mesh = new THREE.Object3D();  // Wrapper to ensure correct rotation
         this._mesh.castShadow = true;
         this._mesh.userData.parent = this;
@@ -132,7 +138,7 @@ export default class HumanObject extends WorldObject {
         this._physicsMaterial = new CANNON.Material(/*this.id*/);
         this._contactMaterial = new CANNON.ContactMaterial(this._physicsMaterial, this._terrainPhysicsMaterial, {
             friction: 0.1,
-            restitution: 0.0
+            restitution: 0.0,
         });
 
         this._body._capsuleBody.material = this._physicsMaterial;
@@ -160,16 +166,37 @@ export default class HumanObject extends WorldObject {
     }
 
     canSee(target) {
-        const rayOrigin = this._mesh.position.clone();
-        const rayDirection = target._mesh.position.clone().sub(rayOrigin).normalize();
-        const raycaster = new THREE.Raycaster(rayOrigin, rayDirection, 0, this.maxViewDistance);
-        const intersects = raycaster.intersectObject(target._mesh);  
-        
-        if (intersects.length > 0) {
-            this._targetLastKnownPosition = target._mesh.position.clone();
-            return true;
-        } else {
-            return false;
+        const directionVector = new THREE.Vector3();
+        this._mesh.getWorldDirection(directionVector);
+
+        const toTarget = new THREE.Vector3().subVectors(target._mesh.position, this._mesh.position);
+        const distance = toTarget.length();
+        toTarget.normalize();
+
+        const angle = directionVector.angleTo(toTarget);
+        const fov = Math.PI;
+
+        if (angle < fov / 2 && distance < this._viewDistance) {
+            const rayOrigin = this._mesh.position.clone();
+            const raycaster = new THREE.Raycaster(rayOrigin, toTarget, 0, this._viewDistance);
+            U.debugRaycaster(raycaster, this._game._scene, this._viewDistance, 0x00ff00);
+
+            const intersects = raycaster.intersectObjects(this._game._scene.children, true);
+            const validHits = intersects.filter(hit => 
+                hit.object.userData.worldObject !== this
+                && hit.object.type !== 'Line'
+            );  
+            
+            if (validHits.length > 0 && validHits[0].object.userData.worldObject === target) {
+                this._targetLastKnownPosition = target._mesh.position.clone();
+                return true;
+            } else {
+                return false;
+            }
         }
+    }
+
+    jump() {
+        this._body._capsuleBody.velocity.y = this._jumpVelocity;
     }
 }

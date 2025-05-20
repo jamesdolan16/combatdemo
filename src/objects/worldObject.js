@@ -20,6 +20,8 @@ export default class WorldObject {
         this._gravity = gravity;
         this._startupCallback = startupCallback;
         this._updateCallback = updateCallback;
+
+        this._positionHistory = [];
     }
 
     async initialise() {
@@ -39,7 +41,20 @@ export default class WorldObject {
     _setupPhysics() {}
 
     update(delta) {
+        this._updatePositionHistory();
         this._updateCallback(delta);
+    }
+
+    _updatePositionHistory() {
+        this._positionHistory.push({
+            time: performance.now() / 1000,
+            position: this._mesh.getWorldPosition(new THREE.Vector3()),
+            quaternion: this._mesh.getWorldQuaternion(new THREE.Quaternion())
+        });
+
+        //Remove positions older than 3 seconds
+        const cutoffTime = performance.now() - 1000;
+        this._positionHistory = this._positionHistory.filter(pos => pos.time > cutoffTime);
     }
 
     alignToSocket(itemMesh, itemSocket, targetSocket) {

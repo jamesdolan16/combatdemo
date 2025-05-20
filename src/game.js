@@ -78,6 +78,7 @@ export default class Game {
             if (!classConstructor) throw new Error(`No class found for WorldObject type: ${objectData.type}`);
             const object = new classConstructor(this, objectData.properties);
             await object.initialise();
+            //this.worldO
             this._mixers.push(object._mixer);
             this._scene.add(object._mesh); 
             /*this._scene.add(
@@ -98,7 +99,7 @@ export default class Game {
             {
                 "type": "player",
                 "properties": {
-                    "position": { "x": 0, "y": 15, "z": 5 },
+                    "position": { "x": 5, "y": 3, "z": 5 },
                 },
                 "gravity": true,
                 "startupCallback": function() {}
@@ -111,7 +112,7 @@ export default class Game {
                     "gravity": true,
                     "startupCallback": function() {},
                     "updateCallback": function() {
-                        if (this.canSee(this._game.activePlayer)) {
+                        if (this.canSee(this._game.activePlayer) || this._targetLastKnownPosition) {
                             this.pursue(this._game.activePlayer);
                         }
                     },
@@ -132,22 +133,6 @@ export default class Game {
     _setupLights() {
         this._scene.add(new THREE.AmbientLight(0xffffff, 0.5));
     }
-
-    _playerGrounded() {
-        // Set up a ray that starts at the player's current position and points downward
-        const rayOrigin = new THREE.Vector3(
-            this._playerBody._capsuleBody.position.x, 
-            this._playerBody._capsuleBody.position.y + 0.5, 
-            this._playerBody._capsuleBody.position.z
-        ); // Slight offset upwards to start above the player
-        const rayDirection = new THREE.Vector3(0, -1, 0);  // Ray going downward
-        
-        const raycaster = new THREE.Raycaster(rayOrigin, rayDirection, 0, 2); // Range is from 0 to 1 to detect objects just beneath
-        const intersects = raycaster.intersectObject(this._terrain);  // _terrain is the terrain object or mesh
-        
-        return intersects.length > 0; // If there's an intersection, we're grounded
-    }
-
 
     _setupRenderer() {
         this._renderer = new THREE.WebGLRenderer({ antialias: true });
