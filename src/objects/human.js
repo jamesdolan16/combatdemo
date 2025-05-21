@@ -35,11 +35,8 @@ export default class HumanObject extends WorldObject {
 
     async _preloadMeshes() {
         await Promise.all(this?.inventory.map(async item => {
-            const mesh = await this._loader.loadAsync(`${item.item}.glb`, (e) => {
-                console.log((e.loaded / e.total * 100) + '% loaded');
-            });
-            item.mesh = mesh.scene;
-            item.handSocket = mesh.scene.getObjectByName('handSocket');
+            item.mesh = await this._GLTFCache.fetchClonedScene(item.name);
+            item.handSocket = item.mesh.getObjectByName('handSocket');
         }));
     }
 
@@ -69,40 +66,13 @@ export default class HumanObject extends WorldObject {
     }
 
     async _generateMesh() {
-        let gltf = await this._loader.loadAsync('/enemy.glb', (e) => {
-            console.log((e.loaded / e.total * 100) + '% loaded');
-        });
-
-        gltf.animations.forEach(anim => {
-            for(let idx = anim.tracks.length-1 ; idx>=0 ; idx--) {
-                let track = anim.tracks[idx];
-    
-                let numElements = track.values.length / track.times.length;
-    
-                let delta = 0;
-                for(let i=0 ; i<numElements ; i++) {
-                    let valList = track.values.filter((value, index) => (index % numElements) === i);
-                    let min = valList.reduce((a,b) => Math.min(a,b), valList[0]);
-                    let max = valList.reduce((a,b) => Math.max(a,b), valList[0]);
-                    // Sum up all absolute changes in this track
-                    delta += Math.abs(max-min);
-                }
-    
-                if(delta === 0) {
-                    // This track has no animation on it - remove it
-                    anim.tracks.splice(idx, 1);
-                }
-            }
-        });
-
-        gltf.scene.traverse((child) => {
-            child.userData.worldObject = this;
-        });
+        const gltf = await this._GLTFCache.fetch('male-default');
+        const scene = gltf.scene.clone();
 
         this._mesh = new THREE.Object3D();  // Wrapper to ensure correct rotation
         this._mesh.castShadow = true;
         this._mesh.userData.parent = this;
-        this._mesh.userData.box = new THREE.Box3().setFromObject(gltf.scene);
+        this._mesh.userData.box = new THREE.Box3().setFromObject(scene);
         this._mesh.userData.height = this._mesh.userData.box.max.y - this._mesh.userData.box.min.y;
 
         this._mesh.scale.setScalar(1.8 / this._mesh.userData.height);
@@ -118,14 +88,14 @@ export default class HumanObject extends WorldObject {
             this._initialRotation.z
         );
 
-        gltf.scene.position.y = -this._mesh.userData.height / 2;
-        this._mesh.add(gltf.scene);
+        scene.position.y = -this._mesh.userData.height / 2;
+        this._mesh.add(scene);
 
         this._animations = gltf.animations;
         this._mixer = new THREE.AnimationMixer(this._mesh);
-        this._cameraSocket = gltf.scene.getObjectByName('firstPersonCameraSocket');
-        this._rightHandSocket = gltf.scene.getObjectByName('handSocketR');
-        this._leftHandSocket = gltf.scene.getObjectByName('handSocketL');
+        this._cameraSocket = scene.getObjectByName('firstPersonCameraSocket');
+        this._rightHandSocket = scene.getObjectByName('handSocketR');
+        this._leftHandSocket = scene.getObjectByName('handSocketL');
     }
 
     _setupPhysics() {

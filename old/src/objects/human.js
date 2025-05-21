@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import * as U from '../utilities.js';
 import Capsule from '../cannon/capsule.js';
 
-export default class HumanObject extends WorldObject {
+export default class HumanObject extends DynamicWorldObject {
     constructor(game, options = {}) {
         super(game, options);
 

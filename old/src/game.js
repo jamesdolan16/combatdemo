@@ -4,6 +4,7 @@ import * as CANNON from 'cannon-es';
 import CannonDebugger from 'cannon-es-debugger';
 import EnemyObject from './objects/enemy';
 import WorldObject from './objects/worldObject';
+import DynamicWorldObject from './objects/DynamicWorldObject';
 import Capsule from './cannon/capsule';
 import { debug } from 'three/src/nodes/TSL.js';
 import PlayerObject from './objects/player';
@@ -36,8 +37,6 @@ export default class Game {
 
     async _setupScene() {
         this._scene = new THREE.Scene();
-        //const axesHelper = new THREE.AxesHelper(5); // 5 is the length of the lines
-        //this._scene.add(axesHelper);
 
         this._world = new CANNON.World({
             gravity: new CANNON.Vec3(0, -9.82, 0)
@@ -171,7 +170,7 @@ export default class Game {
 
         if (this.activePlayer._controls?.isLocked) {
             this._scene.traverse(object => {
-                if (object.userData.parent instanceof WorldObject) {
+                if (object.userData.parent instanceof DynamicWorldObject) {
                     object.userData.parent.update(delta);
                 }
 

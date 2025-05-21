@@ -7,127 +7,43 @@ import WorldObject from './objects/worldObject';
 import Capsule from './cannon/capsule';
 import { debug } from 'three/src/nodes/TSL.js';
 import PlayerObject from './objects/player';
+import GLTFCache from './GLTFCache';
+import WorldObjectFactory from './objects/WorldObjectFactory';
 
 export default class Game {
-    static CAMERA_POSITION = new THREE.Vector3(0, 15, 5);
-    static WORLD_OBJECTS_CLASSMAP = {
-        "player": PlayerObject,
-        "enemy": EnemyObject
-    };
-
     /**
      * @param {domElement} container Element to contain the game render
      */
     constructor(container) {
         if (!(container instanceof HTMLElement)) throw new Error("Container is not a valid DOM element");
         this._container = container;
+        this._chunks = new Map();
         this._mixers = [];
+        this._spawns = [];
     }
 
     async initialise() {
         this._clock = new THREE.Clock();
         this._loader = new GLTFLoader();
+        this._GLTFCache = new GLTFCache(this._loader);
+        this._worldObjectFactory = new WorldObjectFactory(this);
+
         await this._setupScene();
         this._setupLights();
-        await this._loadWorldObjects();
         this._setupRenderer();
         this._setupCannonDebugger();
     }
 
     async _setupScene() {
         this._scene = new THREE.Scene();
-        //const axesHelper = new THREE.AxesHelper(5); // 5 is the length of the lines
-        //this._scene.add(axesHelper);
 
         this._world = new CANNON.World({
             gravity: new CANNON.Vec3(0, -9.82, 0)
         });
 
-        const gltf = await this._loader.loadAsync('/chunktest.glb', (e) => {
-            console.log((e.loaded / e.total * 100) + '% loaded');
-        });
-        const chunkMesh = gltf.scene;
-        chunkMesh.traverse((child) => {
-            if (child.isMesh) {
-              child.material.side = THREE.DoubleSide;
-            }
-        });
-        chunkMesh.position.set(0, 0, 0);
-        this._scene.add(chunkMesh);
-        this._terrain = chunkMesh.children[0];
-
-        // setup chunk physics
-        const floorShape = new CANNON.Trimesh(
-            chunkMesh.children[0].geometry.attributes.position.array,
-            chunkMesh.children[0].geometry.index.array
-        );
-        const floorBody = new CANNON.Body({
-            mass: 0,
-            shape: floorShape,
-            material: new CANNON.Material('terrain')
-        });
-        this._terrainBody = floorBody;
-        this._world.addBody(floorBody);
-    }
-
-    async _loadWorldObjects() {
-        const objects = await this._fetchWorldObjects();
-
-        objects.forEach(async (objectData) => {
-            const classConstructor = Game.WORLD_OBJECTS_CLASSMAP[objectData.type];
-            if (!classConstructor) throw new Error(`No class found for WorldObject type: ${objectData.type}`);
-            const object = new classConstructor(this, objectData.properties);
-            await object.initialise();
-            //this.worldO
-            this._mixers.push(object._mixer);
-            this._scene.add(object._mesh); 
-            /*this._scene.add(
-                new THREE.ArrowHelper(
-                    new THREE.Vector3(0, 0, -1),
-                    object._mesh.position,
-                    2,
-                    0xff0000
-                ), 
-            )*/      
-            this._world.addBody(object._body._capsuleBody);
-            this._world.addContactMaterial(object._contactMaterial);
-        });
-    }
-
-    async _fetchWorldObjects() {
-        const objects = [
-            {
-                "type": "player",
-                "properties": {
-                    "position": { "x": 5, "y": 3, "z": 5 },
-                },
-                "gravity": true,
-                "startupCallback": function() {}
-            },
-            {
-                "type": "enemy",
-                "properties": {
-                    "position": { "x": 0, "y": 5, "z": 0 },
-                    //"rotation": { "x": 0, "y": 0, "z": 0 },
-                    "gravity": true,
-                    "startupCallback": function() {},
-                    "updateCallback": function() {
-                        if (this.canSee(this._game.activePlayer) || this._targetLastKnownPosition) {
-                            this.pursue(this._game.activePlayer);
-                        }
-                    },
-                    "inventory": [
-                        {
-                            "type": "weapon1h",
-                            "item": "falx1h",
-                            "equippedR": true
-                        }
-                    ]
-                }
-            }
-        ];
-
-        return objects;
+        const chunkName = 'chunk_0_0';
+        this._activeChunk = new Chunk(chunkName, this._GLTFCache, this._world)
+        this._chunks.set(chunkName, this._activeChunk);
     }
     
     _setupLights() {
@@ -154,7 +70,7 @@ export default class Game {
         requestAnimationFrame(() => this._animate());
         const delta = this._clock.getDelta();
 
-        if (this.activePlayer._controls?.isLocked) {
+        if (this.activePlayer?._controls?.isLocked) {
             this._scene.traverse(object => {
                 if (object.userData.parent instanceof WorldObject) {
                     object.userData.parent.update(delta);
