@@ -1,8 +1,8 @@
 import WorldObject from "./worldObject";
 
 export default class DynamicWorldObject extends WorldObject {
-    constructor(game, objectScene) {
-        super(game, objectScene);
+    constructor(chunk, objectScene) {
+        super(chunk, objectScene);
 
         const {
             scriptPath = null,
@@ -14,10 +14,12 @@ export default class DynamicWorldObject extends WorldObject {
         this._startupCallback = startupCallback;
         this._updateCallback = updateCallback;
         this._positionHistory = [];
+        
+        this._terrainPhysicsMaterial = chunk._terrainBody.material;
     }
 
     async initialise() {
-        this._scriptModule = this._loadScriptModule(this._scriptPath);
+        if (this._scriptPath) this._scriptModule = this._loadScriptModule(this._scriptPath);
         this._startupCallback = this._scriptModule?.startupCallback ?? this._startupCallback;
         this._updateCallback = this._scriptModule?.updateCallback ?? this._updateCallback;
 

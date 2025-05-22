@@ -1,7 +1,7 @@
 import DynamicWorldObject from "./DynamicWorldObject";
 
 export default class Interactable extends DynamicWorldObject {
-    constructor(game, objectScene) {
+    constructor(chunk, objectScene) {
         super(game, objectScene);
 
         const {

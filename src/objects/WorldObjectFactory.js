@@ -25,9 +25,9 @@ export default class WorldObjectFactory {
      * @param {Object3D} objectScene 
      * @returns {WorldObject}
      */
-    async newFromSpawnPoint(objectScene) {
+    async newFromSpawnPoint(chunk, objectScene) {
         const classConstructor = this.classMap[objectScene.userData.category];
-        const object = new classConstructor(this, objectScene);
+        const object = new classConstructor(chunk, objectScene);
         await object.initialise();
 
         return object;

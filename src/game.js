@@ -9,6 +9,7 @@ import { debug } from 'three/src/nodes/TSL.js';
 import PlayerObject from './objects/player';
 import GLTFCache from './GLTFCache';
 import WorldObjectFactory from './objects/WorldObjectFactory';
+import Chunk from './chunk';
 
 export default class Game {
     /**
@@ -41,8 +42,9 @@ export default class Game {
             gravity: new CANNON.Vec3(0, -9.82, 0)
         });
 
-        const chunkName = 'chunk_0_0';
-        this._activeChunk = new Chunk(chunkName, this._GLTFCache, this._world)
+        const chunkName = 'chunktest';
+        this._activeChunk = new Chunk(chunkName, this);
+        await this._activeChunk.initialise();
         this._chunks.set(chunkName, this._activeChunk);
     }
     

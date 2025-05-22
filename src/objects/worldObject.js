@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 
 export default class WorldObject {
-    constructor(game, objectScene) {
-        this._game = game;
-        this._GLTFCache = game._GLTFCache;
-        this._terrainPhysicsMaterial = game._terrainBody.material;
+    constructor(chunk, objectScene) {
+        this._chunk = chunk;
+        this._game = chunk._game;
+        this._GLTFCache = chunk._game._GLTFCache;
 
         const {
             position = new THREE.Vector3(), 
@@ -24,7 +24,7 @@ export default class WorldObject {
     }
 
     async initialise() {
-        await this._loadGLTFData();
+        await this._loadScene();
         await this._generateMesh();
         this._setupPhysics();
     }
@@ -43,5 +43,5 @@ export default class WorldObject {
      * Virtual function to be overridden by subclasses
      */
     _setupPhysics() {}
-    
+
 }

@@ -25,14 +25,18 @@ export default class GLTFCache {
         if (cached) return cached;
 
         const path = `/${name}.glb`;
-        const loaded = await this._loader.loadAsync(path, (e) => {
-            console.log((e.loaded / e.total * 100) + '% loaded');
-        });
+        
+        try { 
+            const loaded = await this._loader.loadAsync(path, (e) => {
+                console.log((e.loaded / e.total * 100) + '% loaded');
+            });
+            if (loaded.animations.length > 0) this._trimAnimations(loaded);
 
-        if (loaded.animations.length > 0) this._trimAnimations(loaded);
-
-        this._add(name, loaded);
-        return loaded;
+            this._add(name, loaded);
+            return loaded;
+        } catch (e) {
+            console.error(`Failed to load requested resource: ${name}.glb`);
+        }
     }
 
     /**

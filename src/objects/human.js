@@ -35,7 +35,7 @@ export default class HumanObject extends WorldObject {
 
     async _preloadMeshes() {
         await Promise.all(this?.inventory.map(async item => {
-            item.mesh = await this._GLTFCache.fetchClonedScene(item.name);
+            item.mesh = await this._GLTFCache.fetchClonedScene(item.name, this);
             item.handSocket = item.mesh.getObjectByName('handSocket');
         }));
     }
