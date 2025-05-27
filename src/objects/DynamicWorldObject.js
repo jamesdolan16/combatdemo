@@ -6,43 +6,51 @@ export default class DynamicWorldObject extends WorldObject {
 
         const {
             scriptPath = null,
-            startupCallback = () => {}, 
-            updateCallback = () => {},
+            startupCallback = (object, game) => {}, 
+            updateCallback = (object, game) => {},
         } = objectScene.userData;
 
         this._scriptPath = scriptPath;
         this._startupCallback = startupCallback;
         this._updateCallback = updateCallback;
         this._positionHistory = [];
+        this._sockets = new Map();
         
-        this._terrainPhysicsMaterial = chunk._terrainBody.material;
+        //this._terrainPhysicsMaterial = chunk._terrainBody.material;
     }
 
     async initialise() {
-        if (this._scriptPath) this._scriptModule = this._loadScriptModule(this._scriptPath);
+        if (this._scriptPath) this._scriptModule = await this._loadScriptModule(this._scriptPath);
         this._startupCallback = this._scriptModule?.startupCallback ?? this._startupCallback;
         this._updateCallback = this._scriptModule?.updateCallback ?? this._updateCallback;
 
         await super.initialise();
         this._loadSockets();
 
-        this._startupCallback();
-        this._startupScript(this, game);
+        const result = this._startupCallback(this, this._game);
+        if (result instanceof Promise) await result; // Wait for the startup callback to complete if it's a promise
     }
 
     async _loadScriptModule(path) {
-        const module = await import(`/${path}`);
+        const module = await import(`/src/objects/scripts/${path}`);
         return module.default || module;
     }
 
     _loadSockets() {
-        // TODO: Implement
+        this._scene?.traverse((obj) => {
+            if (!obj.isObject3D || typeof obj.name !== 'string') return;
+
+            // Look for names that match the socket naming pattern
+            if (/socket/i.test(obj.name)) {
+                this._sockets.set(obj.name, obj);
+            }   
+        });
     }
 
-    update(delta) {
+    async update(delta) {
         this._updatePositionHistory();
-        this._updateCallback(delta);
-        this._updateScript(this, game, delta);
+        const result = this._updateCallback(this, game, delta);
+        if (result instanceof Promise) await result;
     }    
 
     _updatePositionHistory() {

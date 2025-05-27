@@ -5,6 +5,7 @@ import Scenery from "./scenery";
 import Character from "./character";
 import Interactable from "./interactable";
 import Prop from "./prop";
+import Player from "./player";
 
 export default class WorldObjectFactory {
     classMap = {
@@ -32,5 +33,11 @@ export default class WorldObjectFactory {
 
         return object;
     }
+
+    async newPlayer(chunk, objectScene) {
+        const player = new Player(chunk, objectScene);
+        await player.initialise();
+        return player;
+    }  
 
 }

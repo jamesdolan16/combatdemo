@@ -6,7 +6,7 @@ import EnemyObject from './objects/enemy';
 import WorldObject from './objects/worldObject';
 import Capsule from './cannon/capsule';
 import { debug } from 'three/src/nodes/TSL.js';
-import PlayerObject from './objects/player';
+import PlayerObject from './objects/oldplayer';
 import GLTFCache from './GLTFCache';
 import WorldObjectFactory from './objects/WorldObjectFactory';
 import Chunk from './chunk';
@@ -42,6 +42,8 @@ export default class Game {
             gravity: new CANNON.Vec3(0, -9.82, 0)
         });
 
+        this._terrainPhysicsMaterial = new CANNON.Material('terrain');
+
         const chunkName = 'chunktest';
         this._activeChunk = new Chunk(chunkName, this);
         await this._activeChunk.initialise();
@@ -72,20 +74,13 @@ export default class Game {
         requestAnimationFrame(() => this._animate());
         const delta = this._clock.getDelta();
 
-        if (this.activePlayer?._controls?.isLocked) {
-            this._scene.traverse(object => {
-                if (object.userData.parent instanceof WorldObject) {
-                    object.userData.parent.update(delta);
-                }
-
-                if (object instanceof THREE.SpotLightHelper) {
-                    object.update();
-                }
-            });
+        //if (this.activePlayer?._controls?.isLocked) {
+            const chunkArray = Array.from(this._chunks.values());
+            chunkArray.forEach(chunk => chunk.update(delta));
             this._world.step(delta);
             //this._cannonDebugger.update();
             this._renderer.render(this._scene, this.activePlayer._camera);
-        }
+        //}
     }
 
     threeToCannonVec3(vec) {

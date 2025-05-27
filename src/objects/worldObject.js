@@ -25,19 +25,14 @@ export default class WorldObject {
 
     async initialise() {
         await this._loadScene();
-        await this._generateMesh();
         this._setupPhysics();
     }
 
     async _loadScene() {
         this._scene = await this._GLTFCache.fetchClonedScene(this._baseName, this);
+        this._mesh = this._scene.children[0];   // Assume the first child is the main mesh
         this._animations = this._GLTFCache.fetch(this._baseName).animations;
     }
-
-    /**
-     * Virtual function to be overridden by subclasses
-     */
-    async _generateMesh() {}
     
     /**
      * Virtual function to be overridden by subclasses
