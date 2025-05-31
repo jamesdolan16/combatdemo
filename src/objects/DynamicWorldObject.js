@@ -1,4 +1,5 @@
 import WorldObject from "./worldObject";
+import * as THREE from 'three';
 
 export default class DynamicWorldObject extends WorldObject {
     constructor(chunk, objectScene) {
@@ -19,6 +20,8 @@ export default class DynamicWorldObject extends WorldObject {
         //this._terrainPhysicsMaterial = chunk._terrainBody.material;
     }
 
+    get type() { return 'DynamicWorldObject'; }
+
     async initialise() {
         if (this._scriptPath) this._scriptModule = await this._loadScriptModule(this._scriptPath);
         this._startupCallback = this._scriptModule?.startupCallback ?? this._startupCallback;
@@ -28,7 +31,9 @@ export default class DynamicWorldObject extends WorldObject {
         this._loadSockets();
 
         const result = this._startupCallback(this, this._game);
-        if (result instanceof Promise) await result; // Wait for the startup callback to complete if it's a promise
+        if (result instanceof Promise) await result;
+        
+        this._readyLevel = this.type;
     }
 
     async _loadScriptModule(path) {
@@ -47,21 +52,26 @@ export default class DynamicWorldObject extends WorldObject {
         });
     }
 
-    async update(delta) {
+    update(delta, timestamp) {
+        if (this._readyLevel !== this.type || this._lastUpdated === timestamp) return;
+        
         this._updatePositionHistory();
-        const result = this._updateCallback(this, game, delta);
-        if (result instanceof Promise) await result;
+        //this._mixer.update(delta);
+        this._scene.position.copy(this._game.cannonToThreeVec3(this._body.position));
+
+        this._updateCallback(this, this._game, delta);
+        this._lastUpdated = timestamp;
     }    
 
     _updatePositionHistory() {
         this._positionHistory.push({
-            time: performance.now() / 1000,
-            position: this._mesh.getWorldPosition(new THREE.Vector3()),
-            quaternion: this._mesh.getWorldQuaternion(new THREE.Quaternion())
+            time: performance.now(),
+            position: this._scene.getWorldPosition(new THREE.Vector3()),
+            quaternion: this._scene.getWorldQuaternion(new THREE.Quaternion())
         });
 
-        //Remove positions older than 3 seconds
-        const cutoffTime = performance.now() - 1000;
+        //Remove positions older than 2 seconds
+        const cutoffTime = performance.now() - 2000;
         this._positionHistory = this._positionHistory.filter(pos => pos.time > cutoffTime);
     }
 

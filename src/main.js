@@ -1,6 +1,21 @@
 import Game from "./game";
 
-const game = new Game(document.body);
-await game.initialise();
+let game;
 
-game.start();
+function init() {
+    game = new Game(document.body);
+    game.initialise().then(() => {
+        game.start();
+    });
+}
+
+if (import.meta.hot) {
+    import.meta.hot.dispose(() => {
+        if (game) {
+            game.dispose();
+            game = null;
+        }
+    });
+}
+
+init();

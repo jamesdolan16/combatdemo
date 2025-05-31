@@ -1,3 +1,3 @@
-export async function startupCallback(playerSpawn, game) {
-    await playerSpawn.spawnPlayer();
+export function startupCallback(playerSpawn, game) {
+    playerSpawn.spawnPlayer();
 }

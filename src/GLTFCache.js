@@ -1,6 +1,7 @@
 import { SkeletonUtils } from "three/examples/jsm/Addons.js";
 import WorldObject from "./objects/worldObject";
 import { Scene } from "three";
+import * as THREE from "three";
 
 export default class GLTFCache {
     constructor(loader, options = {}) {
@@ -28,7 +29,7 @@ export default class GLTFCache {
         
         try { 
             const loaded = await this._loader.loadAsync(path, (e) => {
-                console.log((e.loaded / e.total * 100) + '% loaded');
+                //console.log((e.loaded / e.total * 100) + '% loaded');
             });
             if (loaded.animations.length > 0) this._trimAnimations(loaded);
 
@@ -40,18 +41,24 @@ export default class GLTFCache {
     }
 
     /**
-     * Fetches the requested gltf and returns a clone of the scene
+     * Fetches the requested gltf and returns a clone of the object scene
      * 
      * @param {string} name 
      * @param {WorldObject} parent 
      * @returns {Scene|null}
      */
-    async fetchClonedScene(name, parent) {
+    async fetchClonedScene(name, parentObject) {
         const gltf = await this.fetch(name);
         if (gltf) {
-            const clone = gltf.scene.clone();
+            const clone = SkeletonUtils.clone(gltf.scene);
             clone.traverse((child) => {
-                child.userData.worldObject = parent;
+                child.userData.worldObject = parentObject;
+                child.frustumCulled = false; // Disable frustum culling for all meshes
+                if (child.isMesh) {
+                    child.material.side = THREE.DoubleSide; // Ensure all meshes are double-sided
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                }
             });
             return clone;
         }

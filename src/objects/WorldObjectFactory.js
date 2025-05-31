@@ -26,18 +26,21 @@ export default class WorldObjectFactory {
      * @param {Object3D} objectScene 
      * @returns {WorldObject}
      */
-    async newFromSpawnPoint(chunk, objectScene) {
+    newFromSpawnPoint(chunk, objectScene) {
         const classConstructor = this.classMap[objectScene.userData.category];
         const object = new classConstructor(chunk, objectScene);
-        await object.initialise();
-
-        return object;
+        this._game._initManager.run(
+            object.initialise()
+        )
     }
 
-    async newPlayer(chunk, objectScene) {
+    newPlayer(chunk, objectScene) {
         const player = new Player(chunk, objectScene);
-        await player.initialise();
-        return player;
+        this._game._initManager.run(
+            player.initialise().then(() => {
+                this._game.activePlayer = player;
+            })
+        );
     }  
 
 }

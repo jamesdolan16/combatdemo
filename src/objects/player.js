@@ -11,17 +11,25 @@ export default class Player extends Character {
         this._camera = null; // Will be set up in initialise
     }
 
+    get type() { return 'Player'; }
+
     async initialise() {
         await super.initialise();
         this._setupCamera();
         this._setupControls();
+        
+        this._readyLevel = 'Player';
     }
 
-    async update(delta) {
-        await super.update(delta);
-        const socketPos = this._sockets.get("firstPersonCameraSocket").getWorldPosition(new THREE.Vector3());
+    update(delta, timestamp) {
+        super.update(delta, timestamp);
+        //this._camera.updateMatrixWorld(true);
+        const socket = this._sockets.get("firstPersonCameraSocket");
+        const socketPos = socket.getWorldPosition(new THREE.Vector3());
+        const socketQuat = socket.getWorldQuaternion(new THREE.Quaternion());
+
         this._camera.position.copy(socketPos);
-        
+
         this._controls.update(delta);
 
         const input = new THREE.Vector3();
@@ -29,7 +37,7 @@ export default class Player extends Character {
         if (this._keysPressed['KeyS']) input.z += 1;
         if (this._keysPressed['KeyA']) input.x -= 1;
         if (this._keysPressed['KeyD']) input.x += 1;
-        if (this._keysPressed['Space'] && this.grounded()) this.jump();
+        if (this._keysPressed['Space'] /* && this.grounded() */) this.jump();
 
         if (input.lengthSq() > 0) {
             // Get horizontal facing direction from camera
@@ -52,6 +60,7 @@ export default class Player extends Character {
         this._faceCamera();
     }
     
+    
     _faceCamera() {
         const cameraDirection = new THREE.Vector3();
         this._camera.getWorldDirection(cameraDirection);
@@ -59,21 +68,22 @@ export default class Player extends Character {
         cameraDirection.normalize();
 
         const angle = Math.atan2(cameraDirection.x, cameraDirection.z);
-        this._mesh.quaternion.setFromEuler(new THREE.Euler(0, angle, 0));
+        this._scene.quaternion.setFromEuler(new THREE.Euler(0, angle, 0));
     }
 
     _setupCamera() {
         this._camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const socketPos = this._sockets.get("firstPersonCameraSocket").getWorldPosition(new THREE.Vector3());
-        this._camera.position.copy(socketPos);
-        this._camera.rotation.copy(this._sockets.get("firstPersonCameraSocket").rotation);
-        this._camera.userData.parent = this;
+        this._camera.userData.worldObject = this;
+        this._chunk._scene.add(this._camera);
+
+        /* this._camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const socket = this._sockets.get("firstPersonCameraSocket");
+        socket.add(this._camera); 
+        this._camera.userData.worldObject = this; */
     }
 
     _setupControls() {
         this._controls = new PointerLockControls(this._camera, this._game._container);
-        this._controls.lookSpeed = 0.005;
-        this._controls.lookVertical = true;
 
         document.addEventListener('click', () => {
             this._controls.lock();
@@ -84,10 +94,6 @@ export default class Player extends Character {
                 this._controls.unlock();
             }
         });
-
-        this._playerVelocity = new CANNON.Vec3();
-        this._playerDirection = new THREE.Vector3();
-        this._playerDirection.set(0, 0, 0);
 
         this._keysPressed = {};
 

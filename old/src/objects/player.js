@@ -56,7 +56,7 @@ export default class PlayerObject extends HumanObject {
         super.update(delta);
 
         const socketPos = this._cameraSocket.getWorldPosition(new THREE.Vector3());
-        this._camera.position.copy(socketPos);
+        //this._camera.position.copy(socketPos);
         
         this._controls.update(delta);
 
@@ -95,7 +95,7 @@ export default class PlayerObject extends HumanObject {
         cameraDirection.normalize();
 
         const angle = Math.atan2(cameraDirection.x, cameraDirection.z);
-        this._mesh.quaternion.setFromEuler(new THREE.Euler(0, angle, 0));
+        this._scene.quaternion.setFromEuler(new THREE.Euler(0, angle, 0));
     }
     
 

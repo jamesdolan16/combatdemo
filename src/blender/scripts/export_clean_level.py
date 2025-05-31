@@ -50,6 +50,7 @@ def export_clean_glb():
         export_apply=True,
         export_animations=True,
         export_extras=True,
+        export_yup=True,
     )
 
     print(f"✅ Exported: {export_path}")

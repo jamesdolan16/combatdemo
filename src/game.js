@@ -2,14 +2,13 @@ import * as THREE from 'three';
 import { GLTFLoader, PointerLockControls } from 'three/examples/jsm/Addons.js';
 import * as CANNON from 'cannon-es';
 import CannonDebugger from 'cannon-es-debugger';
-import EnemyObject from './objects/enemy';
 import WorldObject from './objects/worldObject';
 import Capsule from './cannon/capsule';
 import { debug } from 'three/src/nodes/TSL.js';
-import PlayerObject from './objects/oldplayer';
 import GLTFCache from './GLTFCache';
 import WorldObjectFactory from './objects/WorldObjectFactory';
 import Chunk from './chunk';
+import InitManager from './InitManager.js';
 
 export default class Game {
     /**
@@ -21,6 +20,7 @@ export default class Game {
         this._chunks = new Map();
         this._mixers = [];
         this._spawns = [];
+        this._characters = [];
     }
 
     async initialise() {
@@ -28,6 +28,7 @@ export default class Game {
         this._loader = new GLTFLoader();
         this._GLTFCache = new GLTFCache(this._loader);
         this._worldObjectFactory = new WorldObjectFactory(this);
+        this._initManager = new InitManager(this);
 
         await this._setupScene();
         this._setupLights();
@@ -36,8 +37,6 @@ export default class Game {
     }
 
     async _setupScene() {
-        this._scene = new THREE.Scene();
-
         this._world = new CANNON.World({
             gravity: new CANNON.Vec3(0, -9.82, 0)
         });
@@ -48,6 +47,8 @@ export default class Game {
         this._activeChunk = new Chunk(chunkName, this);
         await this._activeChunk.initialise();
         this._chunks.set(chunkName, this._activeChunk);
+        this._scene = this._activeChunk._scene;
+        //this._scene.add(new THREE.AxesHelper(100)); // Add axes helper for debugging
     }
     
     _setupLights() {
@@ -63,28 +64,38 @@ export default class Game {
     }
 
     _setupCannonDebugger() {
-        //this._cannonDebugger = new CannonDebugger(this._scene, this._world);
+        this._cannonDebugger = new CannonDebugger(this._scene, this._world);
     }
 
     start() {
+        this.previousTime = performance.now();
         this._animate();
     }
 
     _animate() {
+        const currentTime = performance.now();
+        const deltaTime = (currentTime - this.previousTime) / 1000; // Convert to seconds
         requestAnimationFrame(() => this._animate());
         const delta = this._clock.getDelta();
 
-        //if (this.activePlayer?._controls?.isLocked) {
+        if (this.activePlayer?._controls?.isLocked) {
+        //if (deltaTime >= 0.5) {
+            this._characters.forEach((char, i) => {
+                console.log(char._scene.position, char._body.position);
+
+            });
+            this.previousTime = currentTime;
             const chunkArray = Array.from(this._chunks.values());
             chunkArray.forEach(chunk => chunk.update(delta));
             this._world.step(delta);
-            //this._cannonDebugger.update();
+            this._cannonDebugger?.update();
             this._renderer.render(this._scene, this.activePlayer._camera);
+        }
         //}
     }
 
     threeToCannonVec3(vec) {
-        return new CANNON.Vec3(threeVec.x, threeVec.y, threeVec.z);
+        return new CANNON.Vec3(vec.x, vec.y, vec.z);
     }
 
     threeToCannonQuaternion(quat) {
@@ -102,6 +113,65 @@ export default class Game {
     lerpAngle(a, b, t) {
         const delta = ((((b - a) % (Math.PI * 2)) + (3 * Math.PI)) % (Math.PI * 2)) - Math.PI;
         return a + delta * t;
+    }
+
+    dispose() {
+        // Clean up Three.js resources
+        cleanupThreeScene(this._scene, this._renderer);
+
+        // Stop animation frame if any
+        cancelAnimationFrame(this._frameId);
+
+        // DOM cleanup if needed
+        if (this._renderer.domElement.parentElement) {
+            this._renderer.domElement.parentElement.removeChild(this._renderer.domElement);
+        }
+
+        console.log("Game cleaned up.");
+    }
+
+    cleanupThreeScene(scene, renderer) {
+        // Dispose all geometries, materials, textures, etc.
+        scene.traverse((object) => {
+            // Dispose geometries
+            if (object.geometry) {
+                object.geometry.dispose();
+            }
+    
+            // Dispose materials (and nested materials in SkinnedMesh or multiple materials)
+            if (object.material) {
+                if (Array.isArray(object.material)) {
+                    object.material.forEach(mat => {
+                        disposeMaterial(mat);
+                    });
+                } else {
+                    disposeMaterial(object.material);
+                }
+            }
+        });
+    
+        // Remove scene children
+        while (scene.children.length > 0) {
+            scene.remove(scene.children[0]);
+        }
+    
+        // Dispose renderer
+        if (renderer) {
+            renderer.dispose();
+            renderer.forceContextLoss();
+            renderer.domElement = null;
+        }
+    }
+    
+    disposeMaterial(material) {
+        // Dispose textures used by material
+        for (const key in material) {
+            const value = material[key];
+            if (value && value instanceof THREE.Texture) {
+                value.dispose();
+            }
+        }
+        material.dispose();
     }
     
 }
