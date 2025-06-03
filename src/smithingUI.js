@@ -67,8 +67,10 @@ export default class SmithingUI {
                     <div id="forge-overview-design" 
                         class="bg-gray-800 p-4 rounded-xl border-4 ${selectedMaterial?.class ?? 'border-gray-600'} cursor-pointer">
                         <h3 class="font-semibold text-lg mb-2">Design</h3>
-                        <p>${selectedMaterial?.label ?? ""} ${selectedDesign?.label ?? ""}</p>
-                        <p>${selectedDesign && selectedMaterial ? "🗡️" + selectedDesign.baseDamage * selectedMaterial.damageMultiplier : ""}</p>
+                        <p>
+                            ${selectedMaterial?.label ?? ""} ${selectedDesign?.label ?? ""} 
+                            ${selectedDesign && selectedMaterial ? "🗡️" + selectedDesign.baseDamage * selectedMaterial.damageMultiplier : ""}
+                        </p>
                     </div>
                     <div class="bg-gray-800 p-4 rounded-xl">
                         <h3 class="font-semibold text-lg mb-2">Requires</h3>
