@@ -4,6 +4,7 @@ export default class WorldObject {
     constructor(chunk, objectScene) {
         this._chunk = chunk;
         this._game = chunk._game;
+        this.gameScene = chunk.gameScene;
         this._GLTFCache = chunk._game._GLTFCache;
 
         const {
@@ -46,7 +47,7 @@ export default class WorldObject {
         this._scene.quaternion.copy(this._initialRotation);
         this._scene.scale.copy(this._initialScale);
         console.log(`Adding ${this._name} to chunk ${this._chunk.name} at position ${this._scene.position.toArray()}`);
-        this._chunk._scene.add(this._scene);
+        this.gameScene.add(this._scene);
         //this._chunk._scene.add(new THREE.BoxHelper(this._mesh, 0xff0000)); // Debug: add a box helper
 
         this._scene.userData.worldObject = this; // Link back to the WorldObject instance

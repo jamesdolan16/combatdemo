@@ -6,9 +6,10 @@ import DynamicWorldObject from './objects/DynamicWorldObject';
 export default class Chunk {
     _chunkSize = 64;
 
-    constructor(name, game) {     
+    constructor(name, game, gameScene) {     
         this.name = name;
         this._game = game;
+        this.gameScene = gameScene;
         this._spawns = [];
         this._mixers = [];
     }
@@ -16,7 +17,6 @@ export default class Chunk {
     async initialise() {
         this._calculateInitialPosition();
         await this._loadScene();
-        this._setupPhysics();
         this._loadSpawns();
 
         this.loadedAt = Date.now();
@@ -60,17 +60,6 @@ export default class Chunk {
             this._game._worldObjectFactory.newFromSpawnPoint(this, objectScene);
         });
     }
-
-    _setupPhysics() {
-        this._cannonMesh = new CANNON.Trimesh(
-            this._terrain.geometry.attributes.position.array,
-            this._terrain.geometry.index.array
-        );
-        this._terrainBody = new CANNON.Body({
-            mass: 0,
-            shape: this._cannonMesh,
-            material: this._game._terrainPhysicsMaterial,
-        });
-        this._game._world.addBody(this._terrainBody);
-    }
+    
+    
 }

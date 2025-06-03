@@ -22,11 +22,13 @@ export default class Player extends Character {
     }
 
     update(delta, timestamp) {
+        if (this._readyLevel !== this.type || this._lastUpdated === timestamp) return;
         super.update(delta, timestamp);
-        //this._camera.updateMatrixWorld(true);
+
         const socket = this._sockets.get("firstPersonCameraSocket");
         const socketPos = socket.getWorldPosition(new THREE.Vector3());
-        const socketQuat = socket.getWorldQuaternion(new THREE.Quaternion());
+
+        this.isGrounded = this.grounded();
 
         this._camera.position.copy(socketPos);
 
@@ -37,7 +39,7 @@ export default class Player extends Character {
         if (this._keysPressed['KeyS']) input.z += 1;
         if (this._keysPressed['KeyA']) input.x -= 1;
         if (this._keysPressed['KeyD']) input.x += 1;
-        if (this._keysPressed['Space'] /* && this.grounded() */) this.jump();
+        if (this._keysPressed['Space'] && this.isGrounded ) this.jump();
 
         if (input.lengthSq() > 0) {
             // Get horizontal facing direction from camera
@@ -53,8 +55,13 @@ export default class Player extends Character {
             this._body.velocity.x = input.x * speed;
             this._body.velocity.z = input.z * speed;
         } else {
-            this._body.velocity.x *= 0.8;
-            this._body.velocity.z *= 0.8;
+            if (this.isGrounded) {
+                this._body.velocity.x = 0;
+                this._body.velocity.z = 0;
+            } else {
+                this._body.velocity.x *= 0.8;
+                this._body.velocity.z *= 0.8;
+            }
         }
 
         this._faceCamera();

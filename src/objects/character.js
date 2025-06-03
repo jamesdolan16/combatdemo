@@ -2,6 +2,7 @@ import DynamicWorldObject from "./DynamicWorldObject";
 import * as U from "../utilities";
 import Interactable from "./interactable";
 import Capsule from "../cannon/capsule";
+import KinematicCapsule from "../cannon/kinematicCapsule";
 import * as CANNON from "cannon-es";
 import * as THREE from "three";
 
@@ -82,27 +83,31 @@ export default class Character extends DynamicWorldObject {
     }
 
     _setupPhysics() {
-        const worldPos = this._scene.getWorldPosition(new THREE.Vector3());
-        this._bodyCapsule = new Capsule(this, 0.5, {
+        const radius = 0.5
+        const height = 1.0 // vertical distance between the centers of the spheres (not total height)
+      
+        // Position from the scene (same as you're doing)
+        const worldPos = this._scene.getWorldPosition(new THREE.Vector3())
+      
+        // Create a capsule body
+        this._body = this._game.physics.add.capsule(
+          {
+            name: 'player',
+            radius,
+            height,
             x: worldPos.x,
-            y: worldPos.y,
-            z: worldPos.z
-        });
-
-        this._body = this._bodyCapsule._capsuleBody;
-        this._game._world.addBody(this._body);
-
-        this._physicsMaterial = new CANNON.Material();
-        this._terrainContactMaterial = new CANNON.ContactMaterial(
-            this._physicsMaterial, 
-            this._game._terrainPhysicsMaterial, 
-            {
-                friction: 0.1,
-                restitution: 0
-            }
-        );
-        this._game._world.addContactMaterial(this._terrainContactMaterial)
+            y: worldPos.y + radius + height / 2, // lift to stand on ground
+            z: worldPos.z,
+            mass: 1
+          },
+          { lambert: { color: 0x00ff00 } } // optional: a basic mesh material if debugging
+        )
+      
+        // Tuning
+        this._body.body.setDamping(0.2, 1.0) // linear, angular
+    
     }
+      
 
     _equipItems() {
         Array.from(this._inventory.entries()).forEach(item => {

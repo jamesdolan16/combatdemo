@@ -9,89 +9,34 @@ import GLTFCache from './GLTFCache';
 import WorldObjectFactory from './objects/WorldObjectFactory';
 import Chunk from './chunk';
 import InitManager from './InitManager.js';
+import { ExtendedObject3D, PhysicsLoader, Project } from 'enable3d';
+import GameScene from './GameScene.js';
+import SmithingUI from './smithingUI.js';
 
-export default class Game {
+export default class Game extends Project {
     /**
      * @param {domElement} container Element to contain the game render
      */
     constructor(container) {
+        super({scenes: [/* MainScene */], container: container});
+
         if (!(container instanceof HTMLElement)) throw new Error("Container is not a valid DOM element");
         this._container = container;
         this._chunks = new Map();
-        this._mixers = [];
-        this._spawns = [];
-        this._characters = [];
     }
 
-    async initialise() {
+    initialise() {
         this._clock = new THREE.Clock();
         this._loader = new GLTFLoader();
         this._GLTFCache = new GLTFCache(this._loader);
         this._worldObjectFactory = new WorldObjectFactory(this);
         this._initManager = new InitManager(this);
-
-        await this._setupScene();
-        this._setupLights();
-        this._setupRenderer();
-        this._setupCannonDebugger();
-    }
-
-    async _setupScene() {
-        this._world = new CANNON.World({
-            gravity: new CANNON.Vec3(0, -9.82, 0)
-        });
-
-        this._terrainPhysicsMaterial = new CANNON.Material('terrain');
-
-        const chunkName = 'chunktest';
-        this._activeChunk = new Chunk(chunkName, this);
-        await this._activeChunk.initialise();
-        this._chunks.set(chunkName, this._activeChunk);
-        this._scene = this._activeChunk._scene;
-        //this._scene.add(new THREE.AxesHelper(100)); // Add axes helper for debugging
-    }
-    
-    _setupLights() {
-        this._scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-    }
-
-    _setupRenderer() {
-        this._renderer = new THREE.WebGLRenderer({ antialias: true });
-        this._renderer.setSize(window.innerWidth, window.innerHeight);
-        this._renderer.shadowMap.enabled = true;
-        this._renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        document.body.appendChild(this._renderer.domElement);
-    }
-
-    _setupCannonDebugger() {
-        this._cannonDebugger = new CannonDebugger(this._scene, this._world);
-    }
-
-    start() {
-        this.previousTime = performance.now();
-        this._animate();
-    }
-
-    _animate() {
-        const currentTime = performance.now();
-        const deltaTime = (currentTime - this.previousTime) / 1000; // Convert to seconds
-        requestAnimationFrame(() => this._animate());
-        const delta = this._clock.getDelta();
-
-        if (this.activePlayer?._controls?.isLocked) {
-        //if (deltaTime >= 0.5) {
-            this._characters.forEach((char, i) => {
-                console.log(char._scene.position, char._body.position);
-
-            });
-            this.previousTime = currentTime;
-            const chunkArray = Array.from(this._chunks.values());
-            chunkArray.forEach(chunk => chunk.update(delta));
-            this._world.step(delta);
-            this._cannonDebugger?.update();
-            this._renderer.render(this._scene, this.activePlayer._camera);
-        }
-        //}
+        this.smithingUI = new SmithingUI(this);
+        this.smithingUI.openSmithingPanel();
+        // PhysicsLoader('/ammo', async () => {
+        //     this._gameScene = new GameScene(this);
+        //     this._gameScene.start();
+        // });
     }
 
     threeToCannonVec3(vec) {

@@ -24,7 +24,8 @@ export default class Capsule {
     _createBody() {
         this._capsuleBody = new CANNON.Body({
             mass: this._mass,
-            fixedRotation: true
+            fixedRotation: true,
+            //linearDamping: 0.1
         });
 
         this._capsuleBody.position.set(
