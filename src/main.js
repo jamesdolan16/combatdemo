@@ -1,12 +1,15 @@
 import Game from "./game";
+import GameUI from "./GameUI";
 import SmithingUI from "./smithingUI";
+import './style.css';
 
 let game;
 
 function init() {
     // game = new Game(document.body);
     // game.initialise();
-    const smithingUI = new SmithingUI({
+    const game = {
+        container: document.getElementById('game-container'),
         activePlayer: {
             skills: {
                 smithing: {
@@ -16,12 +19,27 @@ function init() {
             },
 
             inventory: [
-                { item: 'bronze', quantity: 50 },
-                { item: 'wood', quantity: 50 } 
+                { 
+                    item: 'bronze', 
+                    quantity: 50 
+                },
+                { 
+                    item: 'wood', 
+                    quantity: 50 
+                },
+                {
+                    item: 'iron',
+                    //quantity: 15
+                }
             ]
         }   
-    });
-    smithingUI.openSmithingPanel();
+    };
+
+    const gameUI = new GameUI(game);
+    gameUI.initialise();
+
+    const smithingUI = new SmithingUI(game);
+    //smithingUI.openSmithingPanel();
 }
 
 if (import.meta.hot) {

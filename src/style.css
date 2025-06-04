@@ -1,3 +1,36 @@
+@import "tailwindcss";
+
 body {
     margin: 0;
+}
+
+.ui-overlay {
+    pointer-events: none;
+}
+.ui-overlay .interactive {
+    pointer-events: auto;
+}
+
+.ability-button {
+    @apply bg-gray-800 text-white px-6 py-2 rounded-lg w-16 h-16 border-4 border-gray-400 hover:bg-gray-700 relative;
+}
+
+.ability-icon {
+    @apply absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-2xl;
+}
+
+.keybind-indicator {
+    @apply absolute bottom-1 right-1 text-sm;
+}
+
+.sidebar-button {
+    @apply bg-gray-800 text-white px-2 py-2 rounded-lg w-24 hover:bg-gray-700;
+}
+
+.ui-panel {
+    @apply absolute bg-gray-900 text-white p-3 rounded-lg ;
+}
+
+.close-button {
+    @apply absolute top-[-10px] right-[-5px] text-3xl
 }
