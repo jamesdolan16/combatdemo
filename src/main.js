@@ -16,8 +16,23 @@ function init() {
         activePlayer: {
             skills: {
                 smithing: {
-                    level: 1,
-                    xp: 0
+                    xp: 0,
+                    levelBoundaries: [
+                        -1, 0, 50, 120, 200, 300, 420, 560, 720, 900, 
+                        1100, 1320, 1560, 1820, 2100, 2400, 2720, 3060, 3420, 3800, 
+                        4200, 4620, 5060, 5520, 6000, 6500, 7020, 7560, 8120, 8700, 9300
+                    ],
+                    get level() {
+                        let currentLevel = 0;
+                        for (let i = 0; i < this.levelBoundaries.length; i++) {
+                            if (this.xp < this.levelBoundaries[i]) {
+                                break;
+                            }
+                            currentLevel = i;
+                        }
+
+                        return currentLevel;
+                    }
                 }
             },
 
@@ -25,17 +40,17 @@ function init() {
                 { 
                     item: 'bronze', 
                     stackLimit: 64,
-                    quantity: 350
+                    quantity: 64
                 },
                 { 
                     item: 'wood', 
                     stackLimit: 64,
-                    quantity: 50 
+                    quantity: 64 
                 },
                 {
                     item: 'iron',
                     stackLimit: 64,
-                    quantity: 15
+                    quantity: 64
                 }
             ]
         }   

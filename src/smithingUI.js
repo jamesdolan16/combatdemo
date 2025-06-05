@@ -156,12 +156,13 @@ export default class SmithingUI {
         this.smithingPanel.className = 'fixed inset-0 flex items-end justify-center z-40 bg-black/50';
         this.smithingPanel.innerHTML = `
             <div class="created-item hidden fixed inset-0 flex items-center justify-center z-50 bg-black/50 text-white">
-                <div class="w-full max-w-md h-full max-h-64 bg-gray-800 p-6 rounded-lg shadow-lg">
+                <div class="w-full max-w-md h-full max-h-64 bg-gray-900 p-6 rounded-lg shadow-lg">
                     <div class="relative mb-6">
-                        <h2 class="item-name text-2xl font-bold mb-2">Finished forging</h2>
+                        <h2 data-id="item-name" class="text-2xl font-bold mb-2">Finished forging</h2>
                         <button class="close-button">&times;</button>
                     </div>
-                    <p class="item-damage text-lg mb-4"></p>
+                    <p data-id="item-damage" class="text-lg mb-4"></p>
+                    <p data-id="xp-gain" class="text-lg mb-4"></p>
                 </div>
             </div>
             <div class="forge-overview w-full max-w-3xl bg-gray-900 text-white p-6 rounded-t-2xl shadow-2xl border-t border-gray-700">
@@ -193,12 +194,13 @@ export default class SmithingUI {
         this.createdItemPanel.classList.add('hidden');
     }
 
-    showCreatedItemPanel(item) {
+    showCreatedItemPanel(item, xp) {
         if (!item) return;
 
-        const itemName = this.createdItemPanel.querySelector('.item-name');
-        const itemDamage = this.createdItemPanel.querySelector('.item-damage');
-
+        const itemName = this.createdItemPanel.querySelector('[data-id="item-name"]');
+        const itemDamage = this.createdItemPanel.querySelector('[data-id="item-damage"]');
+        const xpGain = this.createdItemPanel.querySelector('[data-id="xp-gain"]');
+        
         itemName.textContent = item.label;
         itemName.classList.remove("ruined", "damaged", "workable", "refined", "masterful", "mythic");
         itemName.classList.add(item.craftsmanshipModifier);
@@ -217,6 +219,9 @@ export default class SmithingUI {
                     ${prefix}${item.damageBuff}
                 </span>`;
         }
+        xpGain.innerHTML = `
+            <span class="xp-icon">XP</span>
+            <span class="xp">+${xp}</span>`;
 
         this.createdItemPanel.classList.remove('hidden');
     }
@@ -276,12 +281,7 @@ export default class SmithingUI {
             <div class="grid grid-cols-1 gap-4 mb-6">
                 <div class="bg-gray-800 p-4 rounded-xl">
                     <h3 class="font-semibold text-lg mb-2">📊 Skill Impact</h3>
-                    <p>Smithing: 
-                        <span class="text-purple-400">
-                            Lvl  ${this.player.skills.smithing.level} [${this.getXpToNextLevel()} xp to next level]
-                        </span>
-                    </p>
-                    ${this.displayAutoChance(selectedDesign, selectedMaterial)}
+                    <div data-id="skill-impact"></div>
                 </div>
             </div>
         
@@ -312,11 +312,132 @@ export default class SmithingUI {
             }
         });
 
+        this.smithingPanelContent.querySelector('[data-id="begin-button"]').addEventListener('click', () => {
+            if (smithingAllowed) {
+                this.showForgeMinigame(selectedDesign, selectedMaterial);
+            }
+        });
+
         this.smithingPanelRequiredIngredients = this.smithingPanelContent.querySelector('[data-id="required-ingredients"]');
         this.smithingPanelRequiredIngredients.innerHTML = this.displayRequiredIngredients(selectedDesign, selectedMaterial);
         this.game.eventEmitter.on("playerInventoryUpdated", () => {
             this.smithingPanelRequiredIngredients.innerHTML = this.displayRequiredIngredients(selectedDesign, selectedMaterial);
-        })
+        });
+
+        this.smithingPanelSkillImpact = this.smithingPanelContent.querySelector('[data-id="skill-impact"]');
+        this.smithingPanelSkillImpact.innerHTML = this.displaySkillImpact(selectedDesign, selectedMaterial);
+        this.game.eventEmitter.on("playerSkillsUpdated", () => {
+            this.smithingPanelSkillImpact.innerHTML = this.displaySkillImpact(selectedDesign, selectedMaterial);
+        });
+    }
+
+    displaySkillImpact(design, material) {
+        const smithing = this.getXP();
+        return `
+            <p>Smithing: 
+                <span class="text-purple-400">
+                    Lvl  ${smithing.current} [${smithing.xpNextLevel} xp to next level]
+                </span>
+            </p>
+            ${this.displayAutoChance(design, material)}`;
+    }
+
+    beginForging(design, material) {
+        
+    }
+
+    showForgeMinigame(design, material) {
+        const html = `
+            <div class="bg-gray-900 text-white p-4 rounded-lg shadow-xl space-y-6 max-w-5xl mx-auto">
+                <!-- Temperature Bar -->
+                <div>
+                    <label class="block text-sm font-bold mb-1">Maintain Temperature</label>
+                    <div class="relative w-full h-6 bg-gray-700 rounded-full overflow-hidden">
+                        <div class="absolute left-1/3 w-1/3 h-full bg-orange-400 opacity-80"></div>
+                        <div class="absolute left-1/2 w-1 h-full bg-white"></div> <!-- cursor -->
+                    </div>
+                </div>
+
+                <!-- Strike Minigame Ring -->
+                <div class="flex justify-center">
+                    <div class="relative w-40 h-40 rounded-full border-4 border-gray-600 flex items-center justify-center">
+                        <div class="w-48 h-48 mx-auto relative">
+                            <svg viewBox="0 0 100 100" class="w-full h-full transform" id="strike-ring">
+                                <line id="strike-cursor"
+                                    x1="50" y1="50" x2="50" y2="5"
+                                    stroke="#ffffff" stroke-width="2" stroke-linecap="round" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Temperature Control + Quench Options -->
+                <div class="grid grid-cols-2 gap-6">
+                    <!-- Heat Workpiece -->
+                    <div>
+                        <label class="block text-sm font-bold mb-1">Heat Workpiece</label>
+                        <div class="h-40 w-10 bg-gray-700 rounded-lg relative mx-auto">
+                            <div class="absolute bottom-0 w-full bg-yellow-500 h-1/2 rounded-b-lg"></div>
+                        </div>
+                        <div class="text-center mt-2 text-xs text-gray-400">Current Temp</div>
+                    </div>
+
+                    <!-- Quenching -->
+                    <div>
+                        <label class="block text-sm font-bold mb-1">Quenching</label>
+                        <div class="w-full h-6 bg-gray-700 rounded-full overflow-hidden mb-2">
+                            <div class="w-1/3 h-full bg-blue-500 opacity-70"></div>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm">Water</button>
+                            <button class="bg-yellow-600 hover:bg-yellow-700 px-3 py-1 rounded text-sm">Oil</button>
+                            <button class="bg-purple-600 hover:bg-purple-700 px-3 py-1 rounded text-sm">Enchanted</button>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+
+        this.smithingPanelContent.innerHTML = html;
+        this.createStrikeZones();
+    }
+
+    polarToCartesian(cx, cy, r, angleDeg) {
+        const angleRad = (angleDeg - 90) * Math.PI / 180.0;
+        return {
+          x: cx + r * Math.cos(angleRad),
+          y: cy + r * Math.sin(angleRad)
+        };
+      }
+      
+    describeArc(cx, cy, r, startAngle, endAngle) {
+        const start = this.polarToCartesian(cx, cy, r, endAngle);
+        const end = this.polarToCartesian(cx, cy, r, startAngle);
+        const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+      
+        return [
+          "M", start.x, start.y,
+          "A", r, r, 0, largeArcFlag, 0, end.x, end.y
+        ].join(" ");
+    }
+      
+    createStrikeZones() {
+        const svg = document.getElementById("strike-ring");
+        const zones = [
+            { start: 0, end: 100, color: "#ef4444" },     // Red
+            { start: 100, end: 150, color: "#f97316" },   // Orange
+            { start: 150, end: 170, color: "#22c55e" },   // Green (tight!)
+            { start: 170, end: 220, color: "#f97316" },   // Orange
+            { start: 220, end: 360, color: "#ef4444" },   // Red
+        ];
+      
+        zones.forEach(zone => {
+          const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          path.setAttribute("d", this.describeArc(50, 50, 45, zone.start, zone.end));
+          path.setAttribute("fill", "none");
+          path.setAttribute("stroke", zone.color);
+          path.setAttribute("stroke-width", "10");
+          svg.insertBefore(path, svg.firstChild); // ensure cursor is on top
+        });
     }
 
     autoForge(design, material) {
@@ -345,22 +466,29 @@ export default class SmithingUI {
             type: design.name,
             material: material.name
         };
+        let xp = 0;
+        
         if (Math.random() * 100 < chance) {
             // Successful forge
             forgedItem.craftsmanshipModifier = 'workable';
             forgedItem.damageBuff = 3;
+            xp = 10;
         } else {
             forgedItem.craftsmanshipModifier = 'ruined';
             forgedItem.damageBuff = -forgedItem.damage;
         }
-        forgedItem.item = `${forgedItem.craftsmanshipModifier} ${forgedItem.material} ${forgedItem.type}`;
-        forgedItem.label = `${forgedItem.craftsmanshipModifier} ${forgedItem.material} ${forgedItem.type}`;
+        forgedItem.item = `${forgedItem.material} ${forgedItem.type}`;
+        forgedItem.label = `${forgedItem.material} ${forgedItem.type}`;
 
-        this.showCreatedItemPanel(forgedItem);
+        this.showCreatedItemPanel(forgedItem, xp);
+
         this.player.inventory.push(forgedItem);
         this.player.inventory.find(item => item.item === material.name).quantity -= requiredIngredients.material;
         this.player.inventory.find(item => item.item === 'wood').quantity -= requiredIngredients.wood;
         this.game.eventEmitter.emit('playerInventoryUpdated');
+
+        this.player.skills.smithing.xp += xp;
+        this.game.eventEmitter.emit('playerSkillsUpdated');
     }
 
     smithingAllowed(design, material) {
@@ -400,31 +528,22 @@ export default class SmithingUI {
         return chance;
     }
 
-    getXpToNextLevel() {
-        this.levelBoundaries = [
-            -1, 0, 50, 120, 200, 300, 420, 560, 720, 900, 
-            1100, 1320, 1560, 1820, 2100, 2400, 2720, 3060, 3420, 3800, 
-            4200, 4620, 5060, 5520, 6000, 6500, 7020, 7560, 8120, 8700, 9300
-        ];
-
-        // Find the current level
-        let currentLevel = 0;
-        for (let i = 0; i < this.levelBoundaries.length; i++) {
-            if (this.player.skills.smithing.xp < this.levelBoundaries[i]) {
-                break;
-            }
-            currentLevel = i;
-        }
+    getXP() {
+        const levelBoundaries = this.player.skills.smithing.levelBoundaries;
+        const currentLevel = this.player.skills.smithing.level;
 
         // Get the XP this.levelBoundaries for the current and next levels
-        const currentLevelXp = this.levelBoundaries[currentLevel];
-        const nextLevelXp = this.levelBoundaries[currentLevel + 1] || this.levelBoundaries[this.levelBoundaries.length - 1]; // Handle max level
+        const currentLevelXp = levelBoundaries[currentLevel];
+        const nextLevelXp = levelBoundaries[currentLevel + 1] || this.levelBoundaries[levelBoundaries.length - 1]; // Handle max level
 
         // Calculate progress
         const progress = this.player.skills.smithing.xp - currentLevelXp;
         const totalToNextLevel = nextLevelXp - currentLevelXp;
 
-        return totalToNextLevel - progress; // Return the XP needed to reach the next level
+        return {
+            current: currentLevel, 
+            xpNextLevel: totalToNextLevel - progress // Return the XP needed to reach the next level
+        }
     }
     
     showDesignSelection() {

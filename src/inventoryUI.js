@@ -7,6 +7,7 @@ export default class InventoryUI {
         
         this.game.eventEmitter.on('playerInventoryUpdated', () => {
             this.populate();
+            this.uiElements.itemsContainer.scrollTop = this.uiElements.itemsContainer.scrollHeight;
         });
     }
 

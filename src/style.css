@@ -24,6 +24,11 @@ body {
 .buff { @apply text-green-500; }
 .debuff { @apply text-red-500; }
 
+/* XP pseudoicon */
+.xp-icon { @apply inline-block select-none whitespace-nowrap font-mono text-xl font-bold tracking-tight; }
+
+.xp { @apply italic text-white; }
+
 .ui-overlay {
     pointer-events: none;
 }
