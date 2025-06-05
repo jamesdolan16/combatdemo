@@ -6,6 +6,7 @@ export default class SmithingUI {
         this.smithingPanelOpen = false;
         this.missingIngredients = new Set();
         this.hidden = options?.hidden || true;
+        this.externalUI = options?.externalUI || {};
         this.materials = {
             'bronze': {
                 name: 'bronze',
@@ -148,17 +149,18 @@ export default class SmithingUI {
     openSmithingPanel() {
         if (this._smithingPanelOpen) return;
 
+        this.externalUI.inventory.show();
+
         this.smithingPanel = document.createElement('div');
         this.smithingPanel.id = 'smithing-panel';
-        this.smithingPanel.className = 'fixed inset-0 flex items-end justify-center z-40 bg-black bg-opacity-75';
+        this.smithingPanel.className = 'fixed inset-0 flex items-end justify-center z-40 bg-black/50';
         this.smithingPanel.innerHTML = `
-            <div class="created-item hidden fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-90 text-white">
+            <div class="created-item hidden fixed inset-0 flex items-center justify-center z-50 bg-black/50 text-white">
                 <div class="w-full max-w-md h-full max-h-64 bg-gray-800 p-6 rounded-lg shadow-lg">
                     <div class="relative mb-6">
                         <h2 class="item-name text-2xl font-bold mb-2">Finished forging</h2>
                         <button class="close-button">&times;</button>
                     </div>
-                    <h2 class="item-name text-2xl font-bold mb-2"></h2>
                     <p class="item-damage text-lg mb-4"></p>
                 </div>
             </div>
@@ -188,7 +190,7 @@ export default class SmithingUI {
     }
 
     closeCreatedItemPanel() {
-        createdItemPanel.classList.add('hidden');
+        this.createdItemPanel.classList.add('hidden');
     }
 
     showCreatedItemPanel(item) {
@@ -198,7 +200,23 @@ export default class SmithingUI {
         const itemDamage = this.createdItemPanel.querySelector('.item-damage');
 
         itemName.textContent = item.label;
-        itemDamage.innerHTML = `🗡️ ${item.damage} <span class="italic text-green-400">+3</span>`;
+        itemName.classList.remove("ruined", "damaged", "workable", "refined", "masterful", "mythic");
+        itemName.classList.add(item.craftsmanshipModifier);
+        itemDamage.innerHTML = `🗡️ ${item.damage}`;
+        if (item.damageBuff && item.damageBuff !== 0){
+            let style = "";
+            let prefix = "";
+            if(item.damageBuff > 0) {
+                style = "buff";
+                prefix = "+";
+            } else {
+                style = "debuff";
+            }
+            itemDamage.innerHTML += `
+                <span class="italic ${style}">
+                    ${prefix}${item.damageBuff}
+                </span>`;
+        }
 
         this.createdItemPanel.classList.remove('hidden');
     }
@@ -251,7 +269,7 @@ export default class SmithingUI {
                 </div>
                 <div class="bg-gray-800 p-4 rounded-xl">
                     <h3 class="font-semibold text-lg mb-2">Requires</h3>
-                    ${this.displayRequiredIngredients(selectedDesign, selectedMaterial)}
+                    <span data-id="required-ingredients"></span>
                 </div>
             </div>
         
@@ -287,11 +305,18 @@ export default class SmithingUI {
         this.smithingPanelContent.querySelector('#forge-overview-design').addEventListener('click', () => {
             this.showDesignSelection();
         });
+
         this.smithingPanelContent.querySelector('[data-id="auto-button"]').addEventListener('click', () => {
             if (smithingAllowed) {
                 this.autoForge(selectedDesign, selectedMaterial);
             }
         });
+
+        this.smithingPanelRequiredIngredients = this.smithingPanelContent.querySelector('[data-id="required-ingredients"]');
+        this.smithingPanelRequiredIngredients.innerHTML = this.displayRequiredIngredients(selectedDesign, selectedMaterial);
+        this.game.eventEmitter.on("playerInventoryUpdated", () => {
+            this.smithingPanelRequiredIngredients.innerHTML = this.displayRequiredIngredients(selectedDesign, selectedMaterial);
+        })
     }
 
     autoForge(design, material) {
@@ -315,23 +340,27 @@ export default class SmithingUI {
 
         // Simulate forging process
         const chance = this.calculateAutoChance(this.player.skills.smithing.level, requiredLevel);
+        let forgedItem = {
+            damage: design.baseDamage * material.damageMultiplier,
+            type: design.name,
+            material: material.name
+        };
         if (Math.random() * 100 < chance) {
             // Successful forge
-            const forgedItem = {
-                label: `${material.label} ${design.label}`,
-                damage: design.baseDamage * material.damageMultiplier,
-                type: design.name,
-                material: material.name
-            };
-            this.showCreatedItemPanel(forgedItem);
-            // Update player's inventory
-            this.player.inventory.push(forgedItem);
-            // Deduct ingredients
-            this.player.inventory.find(item => item.item === material.name).quantity -= requiredIngredients.material;
-            this.player.inventory.find(item => item.item === 'wood').quantity -= requiredIngredients.wood;
+            forgedItem.craftsmanshipModifier = 'workable';
+            forgedItem.damageBuff = 3;
         } else {
-            alert("Forging failed! Better luck next time.");
+            forgedItem.craftsmanshipModifier = 'ruined';
+            forgedItem.damageBuff = -forgedItem.damage;
         }
+        forgedItem.item = `${forgedItem.craftsmanshipModifier} ${forgedItem.material} ${forgedItem.type}`;
+        forgedItem.label = `${forgedItem.craftsmanshipModifier} ${forgedItem.material} ${forgedItem.type}`;
+
+        this.showCreatedItemPanel(forgedItem);
+        this.player.inventory.push(forgedItem);
+        this.player.inventory.find(item => item.item === material.name).quantity -= requiredIngredients.material;
+        this.player.inventory.find(item => item.item === 'wood').quantity -= requiredIngredients.wood;
+        this.game.eventEmitter.emit('playerInventoryUpdated');
     }
 
     smithingAllowed(design, material) {

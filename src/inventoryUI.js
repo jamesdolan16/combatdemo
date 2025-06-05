@@ -4,6 +4,10 @@ export default class InventoryUI {
         this.player = game.activePlayer;
         this.uiElements = {};
         this.hidden = options?.hidden || false;
+        
+        this.game.eventEmitter.on('playerInventoryUpdated', () => {
+            this.populate();
+        });
     }
 
     generateDOMElement() {
@@ -42,20 +46,56 @@ export default class InventoryUI {
         this.uiElements?.panel?.classList.remove("hidden");
     }
 
+    stack(quantity, stackLimit) {
+        return Array.from({ length: Math.ceil(quantity / stackLimit) }, (_, i) =>
+            Math.min(stackLimit, quantity - i * stackLimit)
+        );
+    }
+
     populate() {
         if (!this.uiElements?.itemsContainer) return;
 
         this.uiElements.itemsContainer.innerHTML = ""; // Clear existing items
 
+        const newInventory = []; // Temporary array for the updated inventory
+
+        for (let i = 0; i < this.player.inventory.length; i++) {
+            const item = this.player.inventory[i];
+
+            // Skip invalid entries
+            if (item.stackLimit <= 0 || (item.stackLimit && !item.quantity) || item.quantity <= 0) continue;
+
+            if (item.stackLimit < item.quantity) {
+                // Split into stacks if quantity exceeds stack limit
+                const stacks = this.stack(item.quantity, item.stackLimit);
+                stacks.forEach(stackQuantity => {
+                    const tempItem = structuredClone(item);
+                    tempItem.quantity = stackQuantity;
+                    newInventory.push(tempItem); // Add each stack to the new inventory
+                });
+            } else {
+                newInventory.push(item); // Add the item as-is to the new inventory
+            }
+        }
+
+        // Replace the player's inventory with the updated inventory
+        this.player.inventory = newInventory;
+
+        // Populate the UI with the updated inventory
         this.player.inventory.forEach(item => {
-            if (!item.quantity || item.quantity <= 0) return; // Skip items with zero quantity
-            const itemElement = document.createElement("div");
-            itemElement.classList.add("inventory-item", "flex", "justify-between", "p-1", "border-b", "border-gray-300");
-            itemElement.innerHTML = `
-                <span>${item.item}</span>
-                <span class="text-gray-500">${item.quantity}</span>
-            `;
+            const itemElement = this.inventoryItemElement(item);
             this.uiElements.itemsContainer.appendChild(itemElement);
         });
+    }
+
+    inventoryItemElement(item) {
+        const quantity = item.quantity > 1 ? `<span class="text-gray-500">${item.quantity}</span>` : "";
+        const itemElement = document.createElement("div");
+            itemElement.classList.add("inventory-item", "flex", "justify-between", "p-1", "border-b", "border-gray-300");
+            itemElement.innerHTML = `
+                <span class="${item.craftsmanshipModifier ?? ""}">${item.item}</span>
+                <span class="text-gray-500">${quantity}</span>
+        `;
+        return itemElement;
     }
 }

@@ -37,7 +37,7 @@ export default class DynamicWorldObject extends WorldObject {
     }
 
     async _loadScriptModule(path) {
-        const module = await import(`/src/objects/scripts/${path}`);
+        const module = await import(/* @vite-ignore */`/src/objects/scripts/${path}`);
         return module.default || module;
     }
 

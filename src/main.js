@@ -2,6 +2,8 @@ import Game from "./game";
 import GameUI from "./GameUI";
 import SmithingUI from "./smithingUI";
 import './style.css';
+import EventEmitter from "./EventEmitter";
+
 
 let game;
 
@@ -9,6 +11,7 @@ function init() {
     // game = new Game(document.body);
     // game.initialise();
     const game = {
+        eventEmitter: new EventEmitter(),
         container: document.getElementById('game-container'),
         activePlayer: {
             skills: {
@@ -21,15 +24,18 @@ function init() {
             inventory: [
                 { 
                     item: 'bronze', 
-                    quantity: 50 
+                    stackLimit: 64,
+                    quantity: 350
                 },
                 { 
                     item: 'wood', 
+                    stackLimit: 64,
                     quantity: 50 
                 },
                 {
                     item: 'iron',
-                    //quantity: 15
+                    stackLimit: 64,
+                    quantity: 15
                 }
             ]
         }   

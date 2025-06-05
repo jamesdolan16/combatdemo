@@ -4,6 +4,26 @@ body {
     margin: 0;
 }
 
+/* Craftsmanship Modifiers */
+.ruined { @apply text-white; }
+.damaged { @apply text-amber-950; }
+.workable { @apply text-green-500; }
+.refined { @apply text-blue-700; }
+.masterful { @apply text-yellow-700; }
+.mythic { @apply text-red-600; }
+
+/*Non-Craftable Modifiers */
+.relic { @apply text-slate-400; }
+.divine { @apply text-amber-100; }
+.ancient { @apply text-yellow-500; }
+.primordial { @apply text-purple-600; }
+.ascendant { @apply text-sky-700; }
+.godforged { @apply text-green-800; }
+
+/* buff stuff */
+.buff { @apply text-green-500; }
+.debuff { @apply text-red-500; }
+
 .ui-overlay {
     pointer-events: none;
 }
@@ -32,5 +52,5 @@ body {
 }
 
 .close-button {
-    @apply absolute top-[-10px] right-[-5px] text-3xl
+    @apply absolute top-[-10px] right-[-5px] text-3xl cursor-pointer
 }

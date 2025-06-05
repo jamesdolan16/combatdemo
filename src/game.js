@@ -12,6 +12,7 @@ import InitManager from './InitManager.js';
 import { ExtendedObject3D, PhysicsLoader, Project } from 'enable3d';
 import GameScene from './GameScene.js';
 import SmithingUI from './smithingUI.js';
+import EventEmitter from './EventEmitter.js';
 
 export default class Game extends Project {
     /**

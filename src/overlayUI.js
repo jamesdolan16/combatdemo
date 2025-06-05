@@ -46,7 +46,7 @@ export default class OverlayUI {
                     </button>
                 `).join('')}
             </div> 
-            <div class="interactive absolute bottom-0 left-1/2 transform -translate-x-1/4 flex justify-center space-x-4 p-4 z-10">
+            <div class="interactive absolute bottom-0 left-1/2 transform -translate-x-1/2 flex justify-center space-x-4 p-4 z-10">
                 <button class="ability-button" title="Lunge">
                     <div class="ability-icon">
                         🗡️
