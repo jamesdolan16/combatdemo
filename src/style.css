@@ -6,11 +6,18 @@ body {
 
 /* Craftsmanship Modifiers */
 .ruined { @apply text-white; }
-.damaged { @apply text-amber-950; }
+.damaged { @apply text-amber-800; }
 .workable { @apply text-green-500; }
 .refined { @apply text-blue-700; }
-.masterful { @apply text-yellow-700; }
+.masterful { @apply text-yellow-600; }
 .mythic { @apply text-red-600; }
+
+.bg-ruined { @apply bg-white; }
+.bg-damaged { @apply bg-amber-950; }
+.bg-workable { @apply bg-green-500; }
+.bg-refined { @apply bg-blue-700; }
+.bg-masterful { @apply bg-yellow-600; }
+.bg-mythic { @apply bg-red-600; }
 
 /*Non-Craftable Modifiers */
 .relic { @apply text-slate-400; }
@@ -19,6 +26,7 @@ body {
 .primordial { @apply text-purple-600; }
 .ascendant { @apply text-sky-700; }
 .godforged { @apply text-green-800; }
+
 
 /* buff stuff */
 .buff { @apply text-green-500; }
@@ -36,24 +44,28 @@ body {
     pointer-events: auto;
 }
 
+.ui-icon {
+    @apply absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-2xl;
+}
+
+.icon-subtext {
+    @apply absolute bottom-1 right-1 text-sm;
+}
+
 .ability-button {
     @apply bg-gray-800 text-white px-6 py-2 rounded-lg w-16 h-16 border-4 border-gray-400 hover:bg-gray-700 relative;
 }
 
-.ability-icon {
-    @apply absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-2xl;
-}
-
-.keybind-indicator {
-    @apply absolute bottom-1 right-1 text-sm;
+.item-container {
+    @apply w-14 h-14 relative hover:bg-gray-700 
 }
 
 .sidebar-button {
-    @apply bg-gray-800 text-white px-2 py-2 rounded-lg w-24 hover:bg-gray-700;
+    @apply bg-gray-900 text-white px-2 py-2 rounded-lg w-24 hover:bg-gray-700;
 }
 
 .ui-panel {
-    @apply absolute bg-gray-900 text-white p-3 rounded-lg ;
+    @apply absolute bg-gray-900 text-white p-3 rounded-t-lg;
 }
 
 .close-button {

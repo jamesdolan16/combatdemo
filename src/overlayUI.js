@@ -9,9 +9,9 @@ export default class OverlayUI {
 
     getSidebarButtons() {
         this.sidebarButtons = [
-            { id: "inventory", name: "Inventory", icon: "📦", action: () => this.externalUI.inventory.show() },
-            { id: "character", name: "Character", icon: "👤", action: () => this.externalUI.character.show() },
-            { id: "smithing", name: "Smithing", icon: "⚒️", action: () => this.externalUI.smithing.show() }
+            { id: "inventory", label: '<span class="underline">I</span>nventory', icon: "📦", action: () => this.externalUI.inventory.show() },
+            { id: "character", label: '<span class="underline">C</span>haracter', icon: "👤", action: () => this.externalUI.character.show() },
+            { id: "smithing", label: '<span class="underline">S</span>mithing', icon: "⚒️", action: () => this.externalUI.smithing.show() }
         ];
 
         return this.sidebarButtons;
@@ -36,40 +36,40 @@ export default class OverlayUI {
         overlayElement.classList.add("ui-overlay", "absolute", "inset-0", "flex", "flex-col", "justify-between");
         if (this.hidden) overlayElement.classList.add("hidden");
         overlayElement.innerHTML = `
-            <div class="interactive absolute bottom-0 right-0 flex flex-col items-end space-y-4 p-4 z-50">
+            <div class="interactive absolute bottom-0 right-0 flex flex-col items-end space-y-2 p-2 z-50">
                 ${sidebarButtons.map(button => `
-                    <button class="sidebar-button" title="${button.name}" data-id="${button.id}">
+                    <button class="sidebar-button" data-id="${button.id}">
                         <div class="sidebar-icon">
                             ${button.icon}
                         </div>
-                        <span class="sidebar-label">${button.name}</span>
+                        <span class="sidebar-label">${button.label}</span>
                     </button>
                 `).join('')}
             </div> 
             <div class="interactive absolute bottom-0 left-1/2 transform -translate-x-1/2 flex justify-center space-x-4 p-4 z-10">
                 <button class="ability-button" title="Lunge">
-                    <div class="ability-icon">
+                    <div class="ui-icon">
                         🗡️
                     </div>
-                    <div class="keybind-indicator">1</div>
+                    <div class="icon-subtext">1</div>
                 </button>
                 <button class="ability-button" title="Enrage">
-                    <div class="ability-icon">
+                    <div class="ui-icon">
                         🔥
                     </div>
-                    <div class="keybind-indicator">2</div>
+                    <div class="icon-subtext">2</div>
                 </button>
                 <button class="ability-button" title="Harden">
-                    <div class="ability-icon">
+                    <div class="ui-icon">
                         🛡️
                     </div>
-                    <div class="keybind-indicator">3</div>
+                    <div class="icon-subtext">3</div>
                 </button>
                 <button class="ability-button !border-red-300 !bg-red-700" title="Potion">
-                    <div class="ability-icon">
+                    <div class="ui-icon">
                         🧪
                     </div>
-                    <div class="keybind-indicator">4</div>
+                    <div class="icon-subtext">4</div>
                 </button>
             </div>
         `;

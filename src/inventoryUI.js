@@ -1,3 +1,5 @@
+import Sortable from "sortablejs";
+
 export default class InventoryUI {
     constructor(game, options = {}) {
         this.game = game;
@@ -15,7 +17,7 @@ export default class InventoryUI {
         const inventoryElement = document.createElement("div");
         inventoryElement.id = "inventory";
         inventoryElement.classList.add(
-            "ui-panel", "flex", "flex-col", "absolute", "bottom-0", "right-0", "h-1/2", "w-72", "z-50"
+            "ui-panel", "flex", "flex-col", "absolute", "bottom-0", "right-[112px]", "h-3/5", "w-96", "z-50"
         );
         if (this.hidden) inventoryElement.classList.add("hidden");
         inventoryElement.innerHTML = `
@@ -23,12 +25,21 @@ export default class InventoryUI {
                 <h2 class="text-xl font-bold mb-1">Inventory</h2>
                 <button class="close-button">&times;</button>
             </div>
-            <div class="inventory-items flex-1 overflow-y-auto p-2 border border-gray-600 rounded-lg h-full">
+            <div class="inventory-items flex-1 flex flex-row flex-wrap content-start overflow-visible 
+                    p-1 rounded-lg h-full">
             </div>
         `;
                 
         this.uiElements.panel = inventoryElement;
         this.uiElements.itemsContainer = inventoryElement.querySelector(".inventory-items");
+        Sortable.create(this.uiElements.itemsContainer, {
+            animation: 150,
+            ghostClass: 'bg-gray-800/10',
+            onEnd: (evt) => {
+                console.log('Moved from', evt.oldIndex, 'to', evt.newIndex);
+                // You can update your inventory state here
+            }
+        });
         this.uiElements.closeButton = inventoryElement.querySelector(".close-button");
         this.uiElements.closeButton.addEventListener("click", () => {
             this.hide();
@@ -84,19 +95,7 @@ export default class InventoryUI {
 
         // Populate the UI with the updated inventory
         this.player.inventory.forEach(item => {
-            const itemElement = this.inventoryItemElement(item);
-            this.uiElements.itemsContainer.appendChild(itemElement);
+            this.uiElements.itemsContainer.appendChild(item.generateDOMElement());
         });
-    }
-
-    inventoryItemElement(item) {
-        const quantity = item.quantity > 1 ? `<span class="text-gray-500">${item.quantity}</span>` : "";
-        const itemElement = document.createElement("div");
-            itemElement.classList.add("inventory-item", "flex", "justify-between", "p-1", "border-b", "border-gray-300");
-            itemElement.innerHTML = `
-                <span class="${item.craftsmanshipModifier ?? ""}">${item.item}</span>
-                <span class="text-gray-500">${quantity}</span>
-        `;
-        return itemElement;
     }
 }

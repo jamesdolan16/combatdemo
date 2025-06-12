@@ -1,5 +1,6 @@
 import InventoryUI from './inventoryUI';
 import OverlayUI from './overlayUI';
+import SmithingManager from './smithingManager';
 import SmithingUI from './smithingUI';
 
 export default class GameUI {
@@ -10,17 +11,17 @@ export default class GameUI {
         this.panels = {};
     }
 
-    initialise() {
-        this.loadUI();
+    async initialise() {
+        await this.loadUI();
         this.outputUI();
     }
 
-    loadUI() {
+    async loadUI() {
         this.loadOverlay();
         this.loadMainMenu();
         this.loadInventory();
         this.loadCharacterPanel();
-        this.loadSmithingPanel();
+        await this.loadSmithingPanel();
     }
 
     loadOverlay() {
@@ -44,15 +45,14 @@ export default class GameUI {
         this.panels.character = {};
     }
 
-    loadSmithingPanel() {
-        this.smithing = new SmithingUI(this.game, {
-            hidden: true,
-            externalUI: this.panels
+    async loadSmithingPanel() {
+        this.panels.smithing = new SmithingManager(this.game, {
+            uiOptions: {
+                hidden: true,
+                externalUI: this.panels
+            }
         });
-        this.panels.smithing = {
-            show: () => this.smithing.openSmithingPanel(),
-            hide: () => this.smithing.closeSmithingPanel(),
-        };
+        await this.panels.smithing.initialise();
     }
 
     outputUI() {

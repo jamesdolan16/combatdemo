@@ -3,11 +3,16 @@ import GameUI from "./GameUI";
 import SmithingUI from "./smithingUI";
 import './style.css';
 import EventEmitter from "./EventEmitter";
-
+import Skill from "./skill";
+import Item from "./item";
+import { label } from "three/tsl";
+import ItemRepository from "./repositories/itemRepository";
+import SmithingManager from "./smithingManager";
 
 let game;
 
 function init() {
+    const itemRepo = new ItemRepository();
     // game = new Game(document.body);
     // game.initialise();
     const game = {
@@ -15,52 +20,60 @@ function init() {
         container: document.getElementById('game-container'),
         activePlayer: {
             skills: {
-                smithing: {
-                    xp: 0,
-                    levelBoundaries: [
-                        -1, 0, 50, 120, 200, 300, 420, 560, 720, 900, 
-                        1100, 1320, 1560, 1820, 2100, 2400, 2720, 3060, 3420, 3800, 
-                        4200, 4620, 5060, 5520, 6000, 6500, 7020, 7560, 8120, 8700, 9300
-                    ],
-                    get level() {
-                        let currentLevel = 0;
-                        for (let i = 0; i < this.levelBoundaries.length; i++) {
-                            if (this.xp < this.levelBoundaries[i]) {
-                                break;
-                            }
-                            currentLevel = i;
-                        }
-
-                        return currentLevel;
-                    }
-                }
+                smithing: new Skill('smithing', { xp: 0 })
             },
-
             inventory: [
-                { 
-                    item: 'bronze', 
+                new Item('bronze-ingot', {
+                    label: 'Bronze Ingot',
                     stackLimit: 64,
-                    quantity: 64
-                },
-                { 
-                    item: 'wood', 
+                    quantity: 64,
+                    icon: 'bronze-ingot.png',
+                    //container: game.activePlayer.inventory
+                }),
+                new Item('wood', {
+                    label: 'Wood',
                     stackLimit: 64,
-                    quantity: 64 
-                },
-                {
-                    item: 'iron',
+                    quantity: 64,
+                    icon: 'wood.png',
+                    //container: game.activePlayer.inventory
+                }),
+                new Item('iron-ingot', {
+                    label: 'Iron Ingot',
                     stackLimit: 64,
-                    quantity: 64
-                }
+                    quantity: 64,
+                    icon: 'iron-ingot.png',
+                    //container: game.activePlayer.inventory
+                }),
+                new Item('garlith-ingot', {
+                    label: 'Garlith Ingot',
+                    stackLimit: 64,
+                    quantity: 64,
+                    icon: 'garlith-ingot.png',
+                }),
+                new Item('damascus-ingot', {
+                    label: 'Damascus Ingot',
+                    stackLimit: 64,
+                    quantity: 64,
+                    icon: 'damascus-ingot.png',
+                }),
+                new Item('kyran-ingot', {
+                    label: 'Kyran Ingot',
+                    stackLimit: 64,
+                    quantity: 64,
+                    icon: 'kyran-ingot.png',
+                }),
+                new Item('tranid-ingot', {
+                    label: 'Tranid Ingot',
+                    stackLimit: 64,
+                    quantity: 64,
+                    icon: 'tranid-ingot.png',
+                }),
             ]
         }   
     };
 
     const gameUI = new GameUI(game);
     gameUI.initialise();
-
-    const smithingUI = new SmithingUI(game);
-    //smithingUI.openSmithingPanel();
 }
 
 if (import.meta.hot) {
