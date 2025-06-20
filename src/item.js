@@ -2,7 +2,15 @@
  * In-game item/item stack
  */
 export default class Item {
-    constructor(name, options = {}) {
+    constructor(name, {
+        label, 
+        craftsmanshipModifier,
+        stackLimit, 
+        quantity, 
+        icon, 
+        container, 
+        extraData
+    } = {}) {
         /**
          * What this item is e.g. bronze-ingot
          * @type {string}
@@ -14,46 +22,46 @@ export default class Item {
          * @type {string}
          * @default this.name
          */
-        this.label = options.label ?? name;
+        this.label = label ?? name;
 
         /**
          * Modifier of this item
          * @default 'ruined'
          */
-        this.craftsmanshipModifier = options.craftsmanshipModifier ?? 'ruined';
+        this.craftsmanshipModifier = craftsmanshipModifier ?? 'ruined';
 
         /**
          * How many of these can be in a stack
          * @type {number}
          * @default 1
          */
-        this.stackLimit = options.stackLimit ?? 1;
+        this.stackLimit = stackLimit ?? 1;
 
         /**
          * How many of this is there in this stack
          * @type {number}
          * @default 1
          */
-        this.quantity = options.quantity ?? 1;
+        this.quantity = quantity ?? 1;
 
         /**
          * Path of the icon file
          * @type {string}
          * @default 'missing-icon.png'
          */
-        this.icon = options.icon ?? 'missing-icon.png';
+        this.icon = icon ?? 'missing-icon.png';
 
         /**
          * The object that currently contains this item/stack
          * @type {object}
          */
-        this.container = options.container;
+        this.container = container;
 
         /**
          * All extra data associated with this Item
          * @type {object}
          */
-        this.extraData = options.extraData;
+        this.extraData = extraData;
     }
 
     /**

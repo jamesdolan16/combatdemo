@@ -117,6 +117,10 @@ export default class SmithingUI {
         itemName.textContent = item.label;
         itemName.classList.remove("ruined", "damaged", "workable", "refined", "masterful", "mythic");
         itemName.classList.add(item.craftsmanshipModifier);
+
+        if (!item.damage) itemDamage.classList.add('hidden');
+        else itemDamage.classList.remove('hidden');
+        
         itemDamage.innerHTML = `🗡️ ${item.damage}`;
         if (item.damageBuff && item.damageBuff !== 0) {
             let style = "";
@@ -136,13 +140,13 @@ export default class SmithingUI {
             <span class="xp-icon">XP</span>
             <span class="xp">+${xp}</span>`;
 
-        const currentXP = this.player.skills.smithing.xp;
-        const gainedXP = xp;
+        const currentXP = this.player.skills.smithing.nextLevelProgress;
         const xpToNext = this.player.skills.smithing.xpToNextLevel;
-        
+        const total = currentXP + xpToNext;
+
         // Percentages
-        const oldPercent = Math.min(100, (currentXP / xpToNext) * 100);
-        const gainedPercent = Math.min(100 - oldPercent, (gainedXP / xpToNext) * 100);
+        const oldPercent = Math.min(100, (currentXP / total) * 100);
+        const gainedPercent = Math.min(100 - oldPercent, (xp / xpToNext) * 100);
 
         oldXpBar.style.width = `${oldPercent}%`;
         newXpBar.style.left = `${oldPercent}%`;
@@ -215,7 +219,7 @@ export default class SmithingUI {
 
         this.smithingPanelContent.querySelector('[data-id="auto-button"]').addEventListener('click', () => {
             if (smithingAllowed) {
-                this.autoForge(this.selectedDesign, this.selectedMaterial);
+                this.manager.autoForge(this.selectedDesign, this.selectedMaterial);
             }
         });
 
@@ -254,11 +258,41 @@ export default class SmithingUI {
         `;
     }
 
+    showXpFloat(position, amount = 0) {
+        this.showFloat(`
+            <span class="xp-icon">XP</span>
+            <span class="xp">+${amount}</span>
+        `, position);
+    }
+
+    showStrikeFloat(position, strike) {
+        position.y -= 30;
+        const text = strike.toUpperCase();
+        this.showFloat(`
+            <span class="${strike}">${text} HIT</span>
+        `, position);
+    }
+
+    showFloat(content, position) {
+        const container = document.getElementById('smithing-float-container');
+        const el = document.createElement('div');
+        el.classList.add('ui-float');
+        el.innerHTML = content;
+        el.style.left = `${position.x}px`;
+        el.style.top = `${position.y}px`;
+    
+        container.appendChild(el);
+        
+        setTimeout(() => el.remove(), 1000); // clean up after animation
+    }
+
     async showForgeMinigame() {
         const html = `
+            <div id="smithing-float-container" class="pointer-events-none fixed top-0 left-0 w-full h-full z-50"></div>
+
             <div class="bg-gray-900 text-white p-4 rounded-lg shadow-xl space-y-6 max-w-5xl mx-auto mb-4">
                 <label class="block text-sm font-bold mb-1">
-                    Forge Temperature: <span id="forge-temp-label">100</span>°
+                    Forge Temperature: <span id="forge-temp-label">15</span>°
                 </label>
                 <div class="relative w-full h-6 bg-gray-700 rounded-full overflow-hidden">
                     <div class="absolute inset-0 bg-gradient-to-r from-sky-400 via-orange-400 to-red-600 opacity-80"></div>
@@ -317,7 +351,7 @@ export default class SmithingUI {
         
         this.strikeCursor = this.smithingPanelContent.querySelector('[data-id="strike-cursor"]');
         
-        this.resetForge();
+        this.manager.resetForge();
         this.manager.updateIdealTemperatureZone();
         this.setupStokeForgeButton();
         this.setupStrikeButton();
@@ -326,20 +360,11 @@ export default class SmithingUI {
 
         this.manager.consumeIngredients();
     }
-     
-    resetForge() {
-        this.strikeCursorAngle = 0;
-        this.forgingProgress = 0;
-        this.forgingQuality = 1;
-        this.forgeTemperature.value = 15;
-        this.workpieceTemperature.value = 15;
-        this.clearIntervals();
-    }
 
     setupStrikeButton() {
         this.strikeButton = this.smithingPanelContent.querySelector('[data-id="strike-button"]');
-        this.strikeButton.addEventListener('click', () => {
-            this.manager.handleStrike(this.strikeCursorAngle);
+        this.strikeButton.addEventListener('click', (event) => {
+            this.manager.handleStrike(this.strikeCursorAngle, {x: event.clientX, y: event.clientY});
         });
 
         this.rotateCursor();
@@ -399,13 +424,8 @@ export default class SmithingUI {
 
         this.workpieceTemperature.value = Math.max(0, this.workpieceTemperature.value - 50);
 
-        if (this.forgingQuality === 0) {
-            alert('The workpiece is ruined!');
-            this.showForgeOverview();
-        }
-
-        if (this.forgingProgress === 100) {
-            this.manager.createItem(this.forgingQuality);
+        if (this.forgingQuality === 0 || this.forgingProgress === 100) {
+            this.manager.createItem(this.forgingQuality)
             this.showForgeOverview();
         }
     }
@@ -463,73 +483,12 @@ export default class SmithingUI {
             this.strikeCursor.setAttribute('transform', `rotate(${angle} 50 50)`);
         }, 1);
     }
-      
-    autoForge(design, material) {
-        if (!design || !material) return;
-
-        const requiredLevel = design.requiredLevelModifier + material.requiredLevel;
-        if (this.player.skills.smithing.level < requiredLevel) {
-            alert(`You need Smithing Level ${requiredLevel} to forge this item.`);
-            return;
-        }
-
-        const requiredIngredients = design.requiredIngredients;
-        const materialInInventory = this.player.inventory.find(item => item.item === material.name)?.quantity ?? 0;
-        const woodInInventory = this.player.inventory.find(item => item.item === 'wood')?.quantity ?? 0;
-
-        if ((requiredIngredients.material && materialInInventory < requiredIngredients.material) ||
-            (requiredIngredients.wood && woodInInventory < requiredIngredients.wood)) {
-            alert("You do not have enough ingredients to forge this item.");
-            return;
-        }
-
-        // Simulate forging process
-        const chance = this.calculateAutoChance(this.player.skills.smithing.level, requiredLevel);
-        let forgedItem = {
-            damage: design.baseDamage * material.damageMultiplier,
-            type: design.name,
-            material: material.name
-        };
-        let xp = 0;
-
-        if (Math.random() * 100 < chance) {
-            // Successful forge
-            forgedItem.craftsmanshipModifier = 'workable';
-            forgedItem.damageBuff = 3;
-            xp = 10;
-        } else {
-            forgedItem.craftsmanshipModifier = 'ruined';
-            forgedItem.damageBuff = -forgedItem.damage;
-        }
-        forgedItem.item = `${forgedItem.material} ${forgedItem.type}`;
-        forgedItem.label = `${forgedItem.material} ${forgedItem.type}`;
-
-        this.showCreatedItemPanel(forgedItem, xp);
-
-        this.player.inventory.push(forgedItem);
-        this.player.inventory.find(item => item.item === material.name).quantity -= requiredIngredients.material;
-        this.player.inventory.find(item => item.item === 'wood').quantity -= requiredIngredients.wood;
-        this.game.eventEmitter.emit('playerInventoryUpdated');
-
-        this.player.skills.smithing.xp += xp;
-        this.game.eventEmitter.emit('playerSkillsUpdated');
-    }
 
     displayAutoChance(design, material) {
         if (!design || !material) return "";
 
-        const chance = this.calculateAutoChance(this.player.skills.smithing.level, design.requiredLevelModifier + material.requiredLevel);
+        const chance = this.manager.calculateAutoChance();
         return `<p>Chance of successful auto: <span class="text-purple-400">${chance}%</span></p>`;
-    }
-
-    calculateAutoChance(playerLevel, itemLevel) {
-        const scalingFactor = 5; // 5% change per level difference
-        let chance = 20 + (playerLevel - itemLevel) * scalingFactor;
-
-        // Clamp the chance between 0% and 100%
-        chance = Math.max(0, Math.min(100, chance));
-
-        return chance;
     }
 
     async showDesignSelection() {
@@ -547,7 +506,7 @@ export default class SmithingUI {
 
         let designsHtml = `<div id="designs-container" 
                                 class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 
-                                        gap-4 overflow-y-auto max-h-96">`;
+                                        gap-4 px-1 overflow-y-auto scrollbar-thin max-h-96">`;
         designsHtml += Object.entries(this.designs).reduce((html, [key, design]) => {
             return html + `
                 <div class="relative design-option bg-gray-600 p-4 rounded-lg min-h-42 text-center 

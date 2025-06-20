@@ -11,7 +11,8 @@ export default class OverlayUI {
         this.sidebarButtons = [
             { id: "inventory", label: '<span class="underline">I</span>nventory', icon: "📦", action: () => this.externalUI.inventory.show() },
             { id: "character", label: '<span class="underline">C</span>haracter', icon: "👤", action: () => this.externalUI.character.show() },
-            { id: "smithing", label: '<span class="underline">S</span>mithing', icon: "⚒️", action: () => this.externalUI.smithing.show() }
+            { id: "skills", label: '<span class="underline">S</span>kills', icon: "📊", action: () => this.externalUI.skills.show() },
+            { id: "smithing", label: 'S<span class="underline">m</span>ithing', icon: "⚒️", action: () => this.externalUI.smithing.show() },
         ];
 
         return this.sidebarButtons;
@@ -33,9 +34,14 @@ export default class OverlayUI {
 
         const overlayElement = document.createElement("div");
         overlayElement.id = "overlay";
-        overlayElement.classList.add("ui-overlay", "absolute", "inset-0", "flex", "flex-col", "justify-between");
+        overlayElement.classList.add("ui-overlay", "absolute", "inset-0", "flex", "flex-col", 
+            "justify-between");
         if (this.hidden) overlayElement.classList.add("hidden");
         overlayElement.innerHTML = `
+            <div data-id="level-up-overlay" 
+                class="fixed top-0 left-1/2 transform -translate-x-1/2 z-50 hidden bg-gray-900 
+                    text-white px-6 py-2 rounded-b-lg shadow-lg text-lg font-semibold">
+            </div>
             <div class="interactive absolute bottom-0 right-0 flex flex-col items-end space-y-2 p-2 z-50">
                 ${sidebarButtons.map(button => `
                     <button class="sidebar-button" data-id="${button.id}">
@@ -46,7 +52,8 @@ export default class OverlayUI {
                     </button>
                 `).join('')}
             </div> 
-            <div class="interactive absolute bottom-0 left-1/2 transform -translate-x-1/2 flex justify-center space-x-4 p-4 z-10">
+            <div class="interactive absolute bottom-0 left-1/2 transform -translate-x-1/2 flex 
+                    justify-center space-x-4 p-4 z-10">
                 <button class="ability-button" title="Lunge">
                     <div class="ui-icon">
                         🗡️
@@ -73,6 +80,9 @@ export default class OverlayUI {
                 </button>
             </div>
         `;
+        this.uiElements.levelUpOverlay = overlayElement.querySelector('[data-id="level-up-overlay"]');
+        this.uiElements.panel = overlayElement;
+
         // Add event listeners for sidebar buttons
         sidebarButtons.forEach(button => {
             const btnElement = overlayElement.querySelector(`button.sidebar-button[data-id="${button.id}"]`);
@@ -80,7 +90,10 @@ export default class OverlayUI {
                 button.action()
             });
         });
-        this.uiElements.panel = overlayElement;
+
+        this.game.eventEmitter.on('playerSkillsUpdated', args => {
+            if (args?.levelUp) this.showLevelUp(args.skill);
+        });
 
         return overlayElement;
     }
@@ -91,5 +104,16 @@ export default class OverlayUI {
 
     show() {
         this.uiElements?.panel.classList.remove("hidden");
+    }
+
+    showLevelUp(skill) {
+        this.uiElements.levelUpOverlay.classList.remove('hidden');
+
+        this.uiElements.levelUpOverlay.innerHTML = `${skill.name} leveled up! Level ${skill.level}`;
+
+        // Hide level up overlay after 5 seconds
+        setInterval(() => {
+            this.uiElements.levelUpOverlay.classList.add('hidden');
+        }, 5000);
     }
 }

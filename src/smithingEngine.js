@@ -1,7 +1,8 @@
 import Item from "./item";
 
 export default class SmithingEngine {
-    constructor() {
+    constructor(manager) {
+        this.itemRepo = manager.itemRepo;
         this.craftsmanshipQuality = {
             'ruined': 0,
             'damaged': 10,
@@ -27,6 +28,7 @@ export default class SmithingEngine {
 
         let progressMod = 0;
         let qualityMod = 0;
+        let xpGain = 0;
 
         if (tempResult === 'hi') progressMod -= 5;
         if (tempResult === 'lo') qualityMod -= 15;
@@ -35,6 +37,7 @@ export default class SmithingEngine {
             case 'perfect':
                 progressMod += 15;
                 qualityMod += 7 + Math.round(15 * qualityScaling);
+                xpGain = (itemLevel + 1);
                 break;
             case 'good':
                 progressMod += 5;
@@ -45,7 +48,17 @@ export default class SmithingEngine {
                 break;
         }
 
-        return { progressMod, qualityMod, strikeResult, tempResult };
+        return { progressMod, qualityMod, strikeResult, tempResult, xpGain };
+    }
+
+    calculateAutoChance(playerLevel, itemLevel) {
+        const scalingFactor = 5; // 5% change per level difference
+        let chance = 20 + (playerLevel - itemLevel) * scalingFactor;
+
+        // Clamp the chance between 0% and 100%
+        chance = Math.max(0, Math.min(100, chance));
+
+        return chance;
     }
 
     getZoneResult(angle, zones) {
@@ -142,7 +155,12 @@ export default class SmithingEngine {
         return tier;
     }
 
-    craftItem(selectedDesign, selectedMaterial, quality) {
+    async craftItem(selectedDesign, selectedMaterial, quality) {
+        if (quality === 0) {
+            const item = await this.itemRepo.getItem('forge-scrap');
+            return {item, xp: 0};
+        }
+
         const itemLevel = selectedMaterial.requiredLevel + selectedDesign.requiredLevelModifier;
         const craftsmanship = this.determineCraftsmanship(quality);
 
@@ -154,7 +172,7 @@ export default class SmithingEngine {
         item.craftsmanshipModifier = craftsmanship;
 
         let xp = 0;
-        const baseXP = (itemLevel + 1) * 10;
+        const baseXP = (itemLevel + 1) * 3;
 
         switch (craftsmanship) {
             case 'ruined':
@@ -183,7 +201,8 @@ export default class SmithingEngine {
         }
 
         xp = Math.ceil(xp);
+        item.damageBuff = Math.round(item.damageBuff);
 
-        return {item, xp};
+        return Promise.resolve({item, xp});
     }
 }

@@ -1,4 +1,5 @@
 import Sortable from "sortablejs";
+import Item from "./item";
 
 export default class InventoryUI {
     constructor(game, options = {}) {
@@ -7,7 +8,8 @@ export default class InventoryUI {
         this.uiElements = {};
         this.hidden = options?.hidden || false;
         
-        this.game.eventEmitter.on('playerInventoryUpdated', () => {
+        this.game.eventEmitter.on('playerInventoryUpdated', (item) => {
+            if (item) this.mergeStacks(item);
             this.populate();
             this.uiElements.itemsContainer.scrollTop = this.uiElements.itemsContainer.scrollHeight;
         });
@@ -58,10 +60,22 @@ export default class InventoryUI {
         this.uiElements?.panel?.classList.remove("hidden");
     }
 
-    stack(quantity, stackLimit) {
+    splitIntoStacks(quantity, stackLimit) {
         return Array.from({ length: Math.ceil(quantity / stackLimit) }, (_, i) =>
             Math.min(stackLimit, quantity - i * stackLimit)
         );
+    }
+
+    mergeStacks(item) {
+        this.player.inventory
+            .filter(stack => stack.name === item.name && stack.quantity < stack.stackLimit)
+            .forEach(stack => {
+                const spaceRemaining = stack.stackLimit - stack.quantity;
+                const transferAmount = Math.min(spaceRemaining, item.quantity);
+                stack.quantity += transferAmount;
+                item.quantity -= transferAmount; // Reserve overflow for the next stack
+            });
+        if (item.quantity === 0) this.player.inventory = this.player.inventory.filter(stack => stack !== item);
     }
 
     populate() {
@@ -75,13 +89,13 @@ export default class InventoryUI {
             const item = this.player.inventory[i];
 
             // Skip invalid entries
-            if (item.stackLimit <= 0 || (item.stackLimit && !item.quantity) || item.quantity <= 0) continue;
+            if (item.stackLimit <= 0 || item.quantity <= 0) continue;
 
             if (item.stackLimit < item.quantity) {
                 // Split into stacks if quantity exceeds stack limit
-                const stacks = this.stack(item.quantity, item.stackLimit);
+                const stacks = this.splitIntoStacks(item.quantity, item.stackLimit);
                 stacks.forEach(stackQuantity => {
-                    const tempItem = structuredClone(item);
+                    const tempItem = Object.assign(new Item(), structuredClone(item));
                     tempItem.quantity = stackQuantity;
                     newInventory.push(tempItem); // Add each stack to the new inventory
                 });

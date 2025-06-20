@@ -4,9 +4,12 @@ export default {
       './src/**/*.{js,ts,jsx,tsx,vue}',
     ],
     theme: {
-      extend: {},
+      extend: {
+      },
     },
-    plugins: [],
+    plugins: [
+      require('tailwind-scrollbar'),
+    ],
     safelist: [
       'grid-cols-3',
       'grid-cols-4',
@@ -15,6 +18,7 @@ export default {
       'grid-cols-7',
       'grid-cols-8',
       'grid-cols-9',
+      'animate-float-up',
     ]
 }
   

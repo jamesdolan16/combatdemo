@@ -15,12 +15,13 @@ function init() {
     const itemRepo = new ItemRepository();
     // game = new Game(document.body);
     // game.initialise();
+    const ee = new EventEmitter();
     const game = {
-        eventEmitter: new EventEmitter(),
+        eventEmitter: ee,
         container: document.getElementById('game-container'),
         activePlayer: {
             skills: {
-                smithing: new Skill('smithing', { xp: 0 })
+                smithing: new Skill('smithing', ee, { xp: 0 })
             },
             inventory: [
                 new Item('bronze-ingot', {

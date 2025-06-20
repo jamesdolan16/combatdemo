@@ -23,6 +23,7 @@ export default class SmithingManager {
             zoneStart: 25,
             zoneEnd: 75,
         }
+
     }
 
     async initialise() {
@@ -55,6 +56,16 @@ export default class SmithingManager {
         this.ui.closeSmithingPanel();
     }
 
+    resetForge() {
+        this.totalStrikeXp = 0;
+        this.forgeTemperature.value = 15;
+        this.workpieceTemperature.value = 15;
+        this.ui.forgingProgress = 0;
+        this.ui.forgingQuality = 1;
+        this.ui.strikeCursorAngle = 0;
+        this.ui.clearIntervals();
+    }
+
     stokeForge(amount = 35) {
         this.forgeTemperature.value = Math.min(this.forgeTemperature.max, this.forgeTemperature.value + amount);
     }      
@@ -66,7 +77,7 @@ export default class SmithingManager {
         this.workpieceTemperature.value = Math.min(this.forgeTemperature.value, newTemp);
     }
     
-    handleStrike(strikeAngle) {
+    handleStrike(strikeAngle, clickPosition = {}) {
         const result = this.engine.evaluateStrike({
           angle: strikeAngle,
           zones: this.strikeZones,
@@ -75,7 +86,16 @@ export default class SmithingManager {
           playerLevel: this.player.skills.smithing.level,
           itemLevel: this.itemLevel
         });
-    
+        
+        if (clickPosition.x && clickPosition.y) {
+            if (result.xpGain > 0) {
+                this.totalStrikeXp += result.xpGain;
+                this.ui.showXpFloat(clickPosition, result.xpGain)
+            }
+
+            this.ui.showStrikeFloat(clickPosition, result.strikeResult);
+        }
+
         this.ui.applyStrikeResult(result);
     }
 
@@ -95,14 +115,18 @@ export default class SmithingManager {
         this.ui.selectedDesign = this.selectedDesign;
     }
 
-    createItem(quality) {
-        const {item, xp} = this.engine.craftItem(this.selectedDesign, this.selectedMaterial, quality);
-        this.ui.showCreatedItemPanel(item, xp);
+    async createItem(quality) {
+        const {item, xp} = await this.engine.craftItem(this.selectedDesign, this.selectedMaterial, quality);
+        const totalXp = xp + this.totalStrikeXp;
+        this.totalStrikeXp = 0;
+        this.ui.showCreatedItemPanel(item, totalXp);
         this.player.inventory.push(item);
-        this.game.eventEmitter.emit('playerInventoryUpdated');
-        this.player.skills.smithing.xp += xp;
+        this.game.eventEmitter.emit('playerInventoryUpdated', item);
+        this.player.skills.smithing.addXp(totalXp);
         this.game.eventEmitter.emit('playerSkillsUpdated');
     }
+
+
 
     updateIdealTemperatureZone() {
         const range = this.selectedMaterial.temperatureRange;
@@ -238,5 +262,29 @@ export default class SmithingManager {
             current: this.player.skills.smithing.level,
             xpNextLevel: this.player.skills.smithing.xpToNextLevel
         }
+    }
+
+    calculateAutoChance() {
+        return this.engine.calculateAutoChance(this.player.skills.smithing.level, this.itemLevel);
+    }
+
+    autoForge() {
+        const {allowed, reasons} = this.smithingAllowed();
+        if (!allowed) {
+            alert(reasons.join("\n"));
+            return;
+        }
+
+        const chance = this.calculateAutoChance();
+        let quality;
+
+        if (Math.random() * 100 < chance) {
+            quality = 50;
+        } else {
+            quality = 0;
+        }
+
+        this.consumeIngredients();
+        this.createItem(quality);
     }
 }

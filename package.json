@@ -20,6 +20,7 @@
     "cannon-es-debugger": "^1.0.0",
     "enable3d": "^0.26.1",
     "sortablejs": "^1.15.6",
+    "tailwind-scrollbar": "^4.0.2",
     "three": "^0.176.0"
   },
   "description": "",

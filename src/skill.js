@@ -1,6 +1,7 @@
 export default class Skill {
-    constructor(name, options = {}) {
+    constructor(name, eventEmitter, options = {}) {
         this.name = name;
+        this.eventEmitter = eventEmitter;
         
         const {
             xp = xp || 0,
@@ -17,7 +18,23 @@ export default class Skill {
         return this.levelXp(this.level + 1) - this.xp;
     }
 
+    get nextLevelProgress() {
+        return this.xp - this.levelXp(this.level);
+    }
+
     levelXp(l) {
         return Math.pow((l / 0.1), 2);
+    }
+
+    addXp(xpGain) {
+        const oldLevel = this.level;
+        this.xp += xpGain;
+        
+        if (oldLevel < this.level) {
+            this.eventEmitter.emit('playerSkillsUpdated', {
+                levelUp: true,
+                skill: this
+            });
+        }
     }
 }

@@ -1,7 +1,27 @@
 @import "tailwindcss";
+@plugin "tailwind-scrollbar";
+
+@theme {
+    --animate-float-up: float-up 1s ease-out forwards;
+
+    @keyframes float-up {
+        0% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        100% {
+            opacity: 0;
+            transform: translateY(-40px);
+        }
+    }
+}
 
 body {
     margin: 0;
+}
+
+html {
+    @apply scrollbar-thumb-gray-700 scrollbar-track-gray-900;
 }
 
 /* Craftsmanship Modifiers */
@@ -27,10 +47,14 @@ body {
 .ascendant { @apply text-sky-700; }
 .godforged { @apply text-green-800; }
 
-
 /* buff stuff */
 .buff { @apply text-green-500; }
 .debuff { @apply text-red-500; }
+
+/* Minigame Action Modifiers */
+.perfect { @apply text-green-500 font-bold; }
+.good { @apply text-amber-500; }
+.bad { @apply text-red-500; }
 
 /* XP pseudoicon */
 .xp-icon { @apply inline-block select-none whitespace-nowrap font-mono text-xl font-bold tracking-tight; }
@@ -43,6 +67,8 @@ body {
 .ui-overlay .interactive {
     pointer-events: auto;
 }
+
+.ui-float { @apply absolute text-3xl animate-float-up; }  
 
 .ui-icon {
     @apply absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-2xl;
