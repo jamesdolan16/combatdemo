@@ -26,10 +26,20 @@ export default class GameScene extends Scene3D {
 
         this.userData.activeChunk = new Chunk('chunktest', this.userData.game, this);
         await this.userData.activeChunk.initialise();
+
+        this.userData.game.eventEmitter.on('pauseGameScene', () => {
+            this.isPaused = true;
+        });
+
+        this.userData.game.eventEmitter.on('resumeGameScene', () => {
+            this.isPaused = false;
+        });
     }
 
     update() {
+        if (this.isPaused) return;
+
         const delta = this.clock.getDelta();
         this.userData.activeChunk.update(delta);
-    }
+    } 
 }

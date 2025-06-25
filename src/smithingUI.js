@@ -91,7 +91,7 @@ export default class SmithingUI {
         this.createdItemPanel = this.smithingPanel.querySelector('.created-item');
 
         this.smithingPanel.querySelector('.forge-overview .close-button').addEventListener('click', () => {
-            this.closeSmithingPanel();
+            this.manager.hide();
         });
 
         this.createdItemPanel.querySelector('.close-button').addEventListener('click', () => {

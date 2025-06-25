@@ -50,10 +50,12 @@ export default class SmithingManager {
 
     show() {
         this.ui.openSmithingPanel();
+        this.game.eventEmitter.emit('pauseGameScene');
     }
 
     hide() {
         this.ui.closeSmithingPanel();
+        this.game.eventEmitter.emit('resumeGameScene');
     }
 
     resetForge() {

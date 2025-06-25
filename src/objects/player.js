@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { PointerLockControls } from "three/examples/jsm/Addons.js";
 import Skill from '../skill.js';
+import Item from '../item.js';
 
 export default class Player extends Character {
 
