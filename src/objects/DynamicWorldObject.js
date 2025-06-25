@@ -57,7 +57,7 @@ export default class DynamicWorldObject extends WorldObject {
         
         this._updatePositionHistory();
         //this._mixer.update(delta);
-        this._scene.position.copy(this._game.cannonToThreeVec3(this._body.position));
+        //this._scene.position.copy(this._game.cannonToThreeVec3(this._body.position));
 
         this._updateCallback(this, this._game, delta);
         this._lastUpdated = timestamp;

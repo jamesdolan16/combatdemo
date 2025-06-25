@@ -11,12 +11,17 @@ import SmithingManager from "./smithingManager";
 
 let game;
 
-function init() {
+async function init() {
     const itemRepo = new ItemRepository();
-    // game = new Game(document.body);
-    // game.initialise();
-    const ee = new EventEmitter();
-    const game = {
+    const game = new Game(document.body);
+    game.initialise();
+
+    game.eventEmitter.on('playerSpawned', async (scene) => {
+        const gameUI = new GameUI(game);
+        gameUI.initialise();
+    });
+
+    /*const game = {
         eventEmitter: ee,
         container: document.getElementById('game-container'),
         activePlayer: {
@@ -71,10 +76,7 @@ function init() {
                 }),
             ]
         }   
-    };
-
-    const gameUI = new GameUI(game);
-    gameUI.initialise();
+    };*/
 }
 
 if (import.meta.hot) {

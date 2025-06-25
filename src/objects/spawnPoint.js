@@ -6,8 +6,7 @@ import WorldObject from "./worldObject";
 */
 export default class SpawnPoint extends DynamicWorldObject {
     spawnPlayer() {
-        
-        this._game._worldObjectFactory.newPlayer(this._chunk, {
+        this._game.worldObjectFactory.newPlayer(this._chunk, {
             position: this._initialPosition,
             quaternion: this._initialRotation,
             scale: this._initialScale,

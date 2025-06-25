@@ -23,9 +23,22 @@ export default class Chunk {
         return this;
     }
 
+    dispose() {
+        // Remove physics from terrain
+        this.gameScene.physics.destroy(this._terrain);
+        
+        // Remove any dynamic bodies
+        this._scene.traverse(obj => {
+          if (obj.body) this.gameScene.physics.destroy(obj);
+        });
+      
+        this.gameScene.scene.remove(this._scene);
+    }
+      
+
     update(delta) {
         const timestamp = Date.now();
-        this._scene.traverse(object => {
+        this.gameScene.scene.traverse(object => {
             if (object.userData.worldObject instanceof DynamicWorldObject) {
                 object.userData.worldObject.update(delta, timestamp);
             }
@@ -47,17 +60,24 @@ export default class Chunk {
     }
 
     async _loadScene() {
-        this._scene = await this._game._GLTFCache.fetchClonedScene(this.name, this);
+        this._scene = await this._game.GLTFCache.fetchClonedScene(this.name, this);
         this._scene.traverse(child => {
             if (child.isMesh) child.material.side = THREE.DoubleSide;
             else if (child.isObject3D && child.name.startsWith("s_")) this._spawns.push(child);
-        });
+        })
+
         this._terrain = this._scene.getObjectByName("floor");
+
+        this.gameScene.scene.add(this._terrain);
+        this.gameScene.physics.add.existing(this._terrain, {
+            shape: 'concave', 
+            mass: 0 
+        });
     }
 
     _loadSpawns() {
         this._spawns.forEach(objectScene => {
-            this._game._worldObjectFactory.newFromSpawnPoint(this, objectScene);
+            this._game.worldObjectFactory.newFromSpawnPoint(this, objectScene);
         });
     }
     

@@ -13,31 +13,31 @@ import { ExtendedObject3D, PhysicsLoader, Project } from 'enable3d';
 import GameScene from './GameScene.js';
 import SmithingUI from './smithingUI.js';
 import EventEmitter from './EventEmitter.js';
+import { SharedContext } from './SharedContext.js';
 
-export default class Game extends Project {
+export default class Game {
     /**
      * @param {domElement} container Element to contain the game render
      */
     constructor(container) {
-        super({scenes: [/* MainScene */], container: container});
-
         if (!(container instanceof HTMLElement)) throw new Error("Container is not a valid DOM element");
-        this._container = container;
-        this._chunks = new Map();
+        this.container = container;
+        this.chunks = new Map();
     }
 
-    initialise() {
-        this._clock = new THREE.Clock();
-        this._loader = new GLTFLoader();
-        this._GLTFCache = new GLTFCache(this._loader);
-        this._worldObjectFactory = new WorldObjectFactory(this);
-        this._initManager = new InitManager(this);
-        this.smithingUI = new SmithingUI(this);
-        this.smithingUI.openSmithingPanel();
-        // PhysicsLoader('/ammo', async () => {
-        //     this._gameScene = new GameScene(this);
-        //     this._gameScene.start();
-        // });
+    initialise(callback = () => {}) {
+        SharedContext.game = this;
+
+        this.loader = new GLTFLoader();
+        this.GLTFCache = new GLTFCache(this.loader);
+        this.worldObjectFactory = new WorldObjectFactory(this);
+        this.initManager = new InitManager(this);
+        this.eventEmitter = new EventEmitter();
+
+        PhysicsLoader('/ammo', () => {
+            this.project = new Project({ scenes: [GameScene] });
+            callback();
+        });
     }
 
     threeToCannonVec3(vec) {

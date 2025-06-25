@@ -19,7 +19,7 @@ export default class InventoryUI {
         const inventoryElement = document.createElement("div");
         inventoryElement.id = "inventory";
         inventoryElement.classList.add(
-            "ui-panel", "flex", "flex-col", "absolute", "bottom-0", "right-[112px]", "h-3/5", "w-96", "z-50"
+            "ui-panel", "absolute", "flex", "flex-col", "absolute", "bottom-0", "right-[112px]", "h-3/5", "w-96", "z-50"
         );
         if (this.hidden) inventoryElement.classList.add("hidden");
         inventoryElement.innerHTML = `

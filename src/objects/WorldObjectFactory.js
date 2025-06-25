@@ -29,16 +29,17 @@ export default class WorldObjectFactory {
     newFromSpawnPoint(chunk, objectScene) {
         const classConstructor = this.classMap[objectScene.userData.category];
         const object = new classConstructor(chunk, objectScene);
-        this._game._initManager.run(
+        this._game.initManager.run(
             object.initialise()
         )
     }
 
     newPlayer(chunk, objectScene) {
         const player = new Player(chunk, objectScene);
-        this._game._initManager.run(
+        this._game.initManager.run(
             player.initialise().then(() => {
                 this._game.activePlayer = player;
+                this._game.eventEmitter.emit('playerSpawned', player);
             })
         );
     }  

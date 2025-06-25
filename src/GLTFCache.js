@@ -53,7 +53,6 @@ export default class GLTFCache {
             const clone = SkeletonUtils.clone(gltf.scene);
             clone.traverse((child) => {
                 child.userData.worldObject = parentObject;
-                child.frustumCulled = false; // Disable frustum culling for all meshes
                 if (child.isMesh) {
                     child.material.side = THREE.DoubleSide; // Ensure all meshes are double-sided
                     child.castShadow = true;

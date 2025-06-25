@@ -1,10 +1,11 @@
 import { Scene3D } from "enable3d";
 import Chunk from "./chunk.js";
+import { SharedContext } from "./SharedContext.js";
 
 export default class GameScene extends Scene3D {
-    constructor(game, config = {}) {
-        super("Main Scene");
-        this.game = game;
+    constructor() {
+        super('GameScene');
+        this.userData = {};
     }
 
     async init() {
@@ -13,26 +14,22 @@ export default class GameScene extends Scene3D {
     }
 
     async preload() {
-        // Load shit
+        this.userData.game = SharedContext.game;
+        // Load assets
     }
 
     async create() {
-        this.warpSpeed();
+        this.warpSpeed('camera', 'light', 'sky');
         this.physics.debug.enable();
 
-        this.activeChunk = new Chunk('chunktest', this.game, this);
-        await this.activeChunk.initialise();
-        debugger;
-        this.scene.add(this.activeChunk._scene);
-        this.add.mesh(this.activeChunk._scene, { 
-            physics: { shape: 'concave', mass: 0 } 
-        });
+        this.clock.start();
+
+        this.userData.activeChunk = new Chunk('chunktest', this.userData.game, this);
+        await this.userData.activeChunk.initialise();
     }
 
     update() {
-        const delta = this.game.loop.delta;
-        this.activeChunk.update(delta);
+        const delta = this.clock.getDelta();
+        this.userData.activeChunk.update(delta);
     }
-
-
 }

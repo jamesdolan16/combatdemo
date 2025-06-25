@@ -239,11 +239,13 @@ export default class SmithingManager {
         this.materialInInventory = this.player.inventory.find(item => item.name === `${this.selectedMaterial.name}-ingot`);
         this.woodInInventory = this.player.inventory.find(item => item.name === 'wood');
 
-        if (requiredIngredients.material && this.materialInInventory?.quantity < requiredIngredients.material) {
+        if (requiredIngredients.material && 
+            (!this.materialInInventory || this.materialInInventory?.quantity < requiredIngredients.material)) {
             allowed = false;
             reasons.push(`Missing ${this.selectedMaterial.label}`);
         } 
-        if (requiredIngredients.wood && this.woodInInventory?.quantity < requiredIngredients.wood) {
+        if (requiredIngredients.wood && 
+            (!this.woodInInventory || this.woodInInventory?.quantity < requiredIngredients.wood)) {
             allowed = false;
             reasons.push(`Missing Wood`);
         }

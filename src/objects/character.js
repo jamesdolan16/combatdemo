@@ -25,6 +25,9 @@ export default class Character extends DynamicWorldObject {
             rightHand: null,
             leftHand: null
         }
+
+        this._mass = 100;
+        this.inventory = structuredClone(this._initialInventory);
     }
 
     get type() { return 'Character'; }
@@ -35,7 +38,6 @@ export default class Character extends DynamicWorldObject {
         //this._equipItems();
 
         this._readyLevel = this.type;
-        this._game._characters.push(this);
     }
 
     async _loadScene() {
@@ -66,6 +68,7 @@ export default class Character extends DynamicWorldObject {
 
         wrapper.add(this._scene);
         this._scene = wrapper;
+        this._mesh = this._scene.children[0]; // Should always be the main mesh due to our wrapper-ing
     }
 
     update(delta, timestamp) {
@@ -84,28 +87,29 @@ export default class Character extends DynamicWorldObject {
 
     _setupPhysics() {
         const radius = 0.5
-        const height = 1.0 // vertical distance between the centers of the spheres (not total height)
+        const height = 3.5 // vertical distance between the centers of the spheres (not total height)
       
         // Position from the scene (same as you're doing)
         const worldPos = this._scene.getWorldPosition(new THREE.Vector3())
       
         // Create a capsule body
-        this._body = this._game.physics.add.capsule(
-          {
-            name: 'player',
-            radius,
-            height,
-            x: worldPos.x,
-            y: worldPos.y + radius + height / 2, // lift to stand on ground
-            z: worldPos.z,
-            mass: 1
-          },
-          { lambert: { color: 0x00ff00 } } // optional: a basic mesh material if debugging
+        this.gameScene.physics.add.existing(this._scene,
+            {
+                shape: 'capsule',
+                name: 'character',
+                radius,
+                height,
+                x: worldPos.x,
+                y: worldPos.y + radius + height / 2, // lift to stand on ground
+                z: worldPos.z,
+                mass: this._mass
+            },
+            { lambert: { color: 0x00ff00 } } // optional: a basic mesh material if debugging
         )
-      
-        // Tuning
-        this._body.body.setDamping(0.2, 1.0) // linear, angular
-    
+
+        this._scene.body.setAngularFactor(0, 0, 0);
+        this._scene.body.setFriction(1);
+        this._scene.body.setDamping(0.9, 1); // linear, angular damping
     }
       
 
@@ -121,9 +125,9 @@ export default class Character extends DynamicWorldObject {
     grounded() {
         // Set up a ray that starts at the player's current position and points downward
         const rayOrigin = new THREE.Vector3(
-            this._body.position.x, 
-            this._body.position.y + 0.5, 
-            this._body.position.z
+            this._scene.position.x, 
+            this._scene.position.y + 0.5, 
+            this._scene.position.z
         ); // Slight offset upwards to start above the player
         const rayDirection = new THREE.Vector3(0, -1, 0);  // Ray going downward
         
@@ -147,9 +151,9 @@ export default class Character extends DynamicWorldObject {
         if (angle < fov / 2 && distance < this._viewDistance) {
             const rayOrigin = this._scene.position.clone();
             const raycaster = new THREE.Raycaster(rayOrigin, toTarget, 0, this._viewDistance);
-            U.debugRaycaster(raycaster, this._game._scene, this._viewDistance, 0x00ff00);
+            U.debugRaycaster(raycaster, this._game.scene, this._viewDistance, 0x00ff00);
 
-            const intersects = raycaster.intersectObjects(this._game._scene.children, true);
+            const intersects = raycaster.intersectObjects(this._game.scene.children, true);
             const validHits = intersects.filter(hit => 
                 hit.object.userData.worldObject !== this
                 && hit.object.type !== 'Line'

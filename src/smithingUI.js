@@ -1,5 +1,5 @@
 import Item from "./item";
-
+import { rafInterval } from "./utilities";
 export default class SmithingUI {
     constructor(manager, options = {}) {
         this.manager = manager;
@@ -30,7 +30,7 @@ export default class SmithingUI {
     }
 
     clearIntervals() {
-        Object.values(this.intervals).forEach((interval) => clearInterval(interval));
+        Object.values(this.intervals).forEach((interval) => cancelAnimationFrame(interval));
     }
 
     closeSmithingPanel() {
@@ -79,7 +79,7 @@ export default class SmithingUI {
         this.smithingPanel.className = 'fixed inset-0 flex items-end justify-center z-40 bg-black/50';
         this.smithingPanel.innerHTML = `
             ${this.getCreatedItemPanelHTML()}
-            <div class="forge-overview w-full max-w-3xl bg-gray-900 text-white p-3 rounded-t-2xl shadow-2xl border-t border-gray-700">
+            <div class="forge-overview ui-panel w-full max-w-3xl bg-gray-900 text-white p-3 rounded-t-2xl shadow-2xl border-t border-gray-700">
                 <div class="relative mb-6">
                     <h2 class="panel-heading text-2xl font-bold mb-1"></h2>
                     <button class="close-button">&times;</button>
@@ -368,7 +368,7 @@ export default class SmithingUI {
         });
 
         this.rotateCursor();
-        this.intervals.decayTemp = setInterval(() => {
+        this.intervals.decayTemp = rafInterval(() => {
             this.updateTempCursor(this.forgeTemperature);
             this.updateTempCursor(this.workpieceTemperature);
         }, 50); 
@@ -399,7 +399,7 @@ export default class SmithingUI {
         this.heatWorkpieceButton = this.smithingPanelContent.querySelector('[data-id="heat-workpiece"]');
         this.heatWorkpieceButton.addEventListener('mousedown', (event) => {
             if (event.button !== 0) return;                 // Must be left click
-            this.intervals.heatHold = setInterval(() => {
+            this.intervals.heatHold = rafInterval(() => {
                 this.manager.heatWorkpiece();
             }, 100);
         });
@@ -476,12 +476,12 @@ export default class SmithingUI {
     }
       
     rotateCursor() {
-        this.intervals.cursorInterval = setInterval(() => {
+        this.intervals.cursorInterval = rafInterval(() => {
             let angle = this.strikeCursorAngle;
 
             this.strikeCursorAngle = (angle + this.manager.getStrikeCursorSpeed()) % 360;
             this.strikeCursor.setAttribute('transform', `rotate(${angle} 50 50)`);
-        }, 1);
+        }, 17);
     }
 
     displayAutoChance(design, material) {
