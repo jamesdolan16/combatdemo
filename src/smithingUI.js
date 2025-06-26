@@ -405,11 +405,11 @@ export default class SmithingUI {
         });
 
         this.heatWorkpieceButton.addEventListener('mouseup', () => {
-            clearInterval(this.intervals.heatHold);
+            cancelAnimationFrame(this.intervals.heatHold);
         });
         
         this.heatWorkpieceButton.addEventListener('mouseleave', () => {
-            clearInterval(this.intervals.heatHold); // safety net for dragging out
+            cancelAnimationFrame(this.intervals.heatHold); // safety net for dragging out
         });
     }
 

@@ -97,7 +97,7 @@ export default class SmithingEngine {
     }
 
     getStrikeCursorSpeed() {
-        return 8;
+        return 6;
     }
 
     getDesignState(design, material, playerLevel) {
